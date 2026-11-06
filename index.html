@@ -7,84 +7,231 @@
   <meta name="theme-color" content="#10111b">
 
   <title>DigiChat - Connect Instantly</title>
-  <meta name="description" content="DigiChat - A simple and secure messaging platform.">
+  <meta name="description" content="DigiChat - Connect, chat and communicate.">
 
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 
 <body>
 
-  <div class="app-container">
+<div class="app-container">
 
-    <header class="brand">
-      <div class="brand-icon">D</div>
-      <h1>Digi<span>Chat</span></h1>
-      <p>Connect. Chat. Communicate.</p>
-    </header>
+  <!-- BRAND -->
+  <header class="brand">
+    <div class="brand-icon">D</div>
+    <h1>Digi<span>Chat</span></h1>
+    <p>Connect. Chat. Communicate.</p>
+  </header>
 
-    <main class="auth-card">
+  <!-- AUTHENTICATION -->
+  <main class="auth-card">
 
-      <div class="auth-heading">
-        <h2 id="formTitle">Welcome Back!</h2>
-        <p id="formSubtitle">Login to continue to DigiChat</p>
+    <div class="auth-heading">
+      <h2 id="formTitle">Welcome Back!</h2>
+      <p id="formSubtitle">Login to continue to DigiChat</p>
+    </div>
+
+    <div class="tabs">
+      <button type="button" id="loginTab" class="tab active">Login</button>
+      <button type="button" id="registerTab" class="tab">Register</button>
+    </div>
+
+    <form id="authForm">
+
+      <div class="form-group" id="nameGroup" hidden>
+        <label for="name">Full Name</label>
+        <input type="text" id="name" placeholder="Enter your full name">
       </div>
 
-      <div class="tabs">
-        <button id="loginTab" class="tab active">Login</button>
-        <button id="registerTab" class="tab">Register</button>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
       </div>
 
-      <form id="authForm">
-
-        <div class="form-group" id="nameGroup" hidden>
-          <label for="name">Full Name</label>
-          <input type="text" id="name" placeholder="Enter your full name">
-        </div>
-
-        <div class="form-group">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" placeholder="Enter your email" required>
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" placeholder="Enter password" minlength="6" required>
-        </div>
-
-        <div class="form-group" id="confirmGroup" hidden>
-          <label for="confirmPassword">Confirm Password</label>
-          <input type="password" id="confirmPassword" placeholder="Confirm password">
-        </div>
-
-        <button type="submit" id="submitBtn" class="primary-btn">
-          Login
-        </button>
-
-      </form>
-
-      <p id="message" class="message" aria-live="polite"></p>
-
-      <div id="userPanel" hidden>
-        <div class="success-icon">✓</div>
-        <h3>You're Connected!</h3>
-        <p id="userEmail"></p>
-        <button id="logoutBtn" class="logout-btn">Logout</button>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" minlength="6" required>
       </div>
 
-      <div class="auth-footer">
-        <p>By continuing, you agree to use DigiChat responsibly.</p>
+      <div class="form-group" id="confirmGroup" hidden>
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm password">
       </div>
 
-    </main>
+      <button type="submit" id="submitBtn" class="primary-btn">
+        Login
+      </button>
 
-    <footer>
-      <p>© 2026 DigiTech Ecosystem | DigiChat</p>
-      <p>Made for better connections ❤️</p>
-    </footer>
+    </form>
 
-  </div>
+    <p id="message" class="message" aria-live="polite"></p>
 
-  <script type="module" src="app.js"></script>
+    <!-- MESSAGING DASHBOARD -->
+    <section id="userPanel" hidden>
+
+      <div class="dashboard">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+          <div class="dash-brand">
+            <div class="small-brand-icon">D</div>
+            <h2>Digi<span>Chat</span></h2>
+          </div>
+
+          <div class="profile-card">
+            <div class="avatar">D</div>
+            <div class="profile-info">
+              <h3>My Account</h3>
+              <p id="userEmail">Loading profile...</p>
+            </div>
+          </div>
+
+          <div class="sidebar-label">MENU</div>
+
+          <button class="nav-item active" type="button">
+            <i class="fa-solid fa-message"></i>
+            <span>Messages</span>
+          </button>
+
+          <button class="nav-item" type="button">
+            <i class="fa-solid fa-users"></i>
+            <span>Contacts</span>
+          </button>
+
+          <button class="nav-item" type="button">
+            <i class="fa-solid fa-user"></i>
+            <span>My Profile</span>
+          </button>
+
+          <button class="nav-item" type="button">
+            <i class="fa-solid fa-gear"></i>
+            <span>Settings</span>
+          </button>
+
+          <div class="sidebar-bottom">
+            <div class="secure-note">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Your conversations matter.</span>
+            </div>
+
+            <button id="logoutBtn" class="logout-btn">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Logout
+            </button>
+          </div>
+
+        </aside>
+
+        <!-- CHAT LIST -->
+        <section class="chat-sidebar">
+
+          <div class="chat-heading">
+            <div>
+              <h2>Messages</h2>
+              <p>Stay connected</p>
+            </div>
+
+            <button class="icon-btn" type="button" title="New chat">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+          </div>
+
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="userSearch"
+              placeholder="Search people or DigiChat ID">
+          </div>
+
+          <div class="chat-filter">
+            <span class="filter-active">All Messages</span>
+            <span>Unread</span>
+          </div>
+
+          <div class="empty-chats">
+            <div class="empty-icon">
+              <i class="fa-regular fa-comments"></i>
+            </div>
+            <h3>No conversations yet</h3>
+            <p>Find people and start your first conversation.</p>
+          </div>
+
+        </section>
+
+        <!-- MAIN CHAT AREA -->
+        <section class="conversation-area">
+
+          <header class="conversation-header">
+            <div class="header-status">
+              <div class="header-logo">D</div>
+              <div>
+                <h3>DigiChat</h3>
+                <p>Messaging workspace</p>
+              </div>
+            </div>
+
+            <div class="header-actions">
+              <button class="icon-btn" type="button" title="Search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+              <button class="icon-btn" type="button" title="More">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="welcome-chat">
+
+            <div class="welcome-illustration">
+              <i class="fa-solid fa-comments"></i>
+            </div>
+
+            <h2>Welcome to DigiChat</h2>
+
+            <p>
+              Your space to connect, communicate and build
+              meaningful conversations.
+            </p>
+
+            <div class="welcome-features">
+              <span><i class="fa-solid fa-bolt"></i> Fast Messaging</span>
+              <span><i class="fa-solid fa-lock"></i> Secure Accounts</span>
+              <span><i class="fa-solid fa-face-smile"></i> Emoji Support</span>
+            </div>
+
+            <p class="coming-soon">Find someone to start chatting.</p>
+
+          </div>
+
+          <footer class="chat-footer">
+            <i class="fa-solid fa-circle-check"></i>
+            Connected to DigiChat
+          </footer>
+
+        </section>
+
+      </div>
+
+    </section>
+
+    <div class="auth-footer">
+      <p>By continuing, you agree to use DigiChat responsibly.</p>
+    </div>
+
+  </main>
+
+  <footer class="page-footer">
+    <p>© 2026 DigiTech Ecosystem | DigiChat</p>
+    <p>Made for better connections ❤️</p>
+  </footer>
+
+</div>
+
+<script type="module" src="app.js"></script>
 
 </body>
 </html>
