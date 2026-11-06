@@ -15,14 +15,14 @@ import {
   getFirestore,
   doc,
   getDoc,
-  writeBatch,
   runTransaction,
+  writeBatch,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-// ===================================
+// =============================================
 // 1. FIREBASE CONFIGURATION
-// ===================================
+// =============================================
 
 const firebaseConfig = {
   apiKey: "AIzaSyBmpAPdpt6XWZMgdIr-4ZHJmCQrHUgnPlg",
@@ -37,10 +37,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ===================================
+// =============================================
 // 2. HTML ELEMENTS
-// ===================================
+// =============================================
 
+// Authentication
+const authView = document.getElementById("authView");
+const appView = document.getElementById("appView");
 const authForm = document.getElementById("authForm");
 
 const loginTab = document.getElementById("loginTab");
@@ -61,34 +64,50 @@ const confirmInput = document.getElementById("confirmPassword");
 const submitBtn = document.getElementById("submitBtn");
 const message = document.getElementById("message");
 
-const userPanel = document.getElementById("userPanel");
-const userEmail = document.getElementById("userEmail");
-const logoutBtn = document.getElementById("logoutBtn");
-
 const formTitle = document.getElementById("formTitle");
 const formSubtitle = document.getElementById("formSubtitle");
 
-const tabs = document.querySelector(".tabs");
-const authHeading = document.querySelector(".auth-heading");
+// Dashboard
+const logoutBtn = document.getElementById("logoutBtn");
+
+const sidebarAvatar = document.getElementById("sidebarAvatar");
+const sidebarName = document.getElementById("sidebarName");
+const sidebarEmail = document.getElementById("sidebarEmail");
+const sidebarUsername = document.getElementById("sidebarUsername");
+const sidebarDigiId = document.getElementById("sidebarDigiId");
+
+const listTitle = document.getElementById("listTitle");
+
+const navButtons = document.querySelectorAll(".nav-item");
+
+const searchForm = document.getElementById("searchForm");
+const messageForm = document.getElementById("messageForm");
+
+// =============================================
+// 3. APPLICATION STATE
+// =============================================
 
 let currentMode = "login";
 let usernameTimer = null;
 let usernameAvailable = false;
-let usernameChecking = false;
+let registrationInProgress = false;
 
-// ===================================
-// 3. MESSAGE SYSTEM
-// ===================================
+// =============================================
+// 4. MESSAGE DISPLAY
+// =============================================
 
 function showMessage(text, type = "success") {
+  if (!message) return;
+
   message.textContent = text;
+
   message.style.color =
     type === "error" ? "#ff7777" : "#4be3a1";
 }
 
-// ===================================
-// 4. USERNAME VALIDATION
-// ===================================
+// =============================================
+// 5. USERNAME VALIDATION
+// =============================================
 
 function normalizeUsername(value) {
   return value.trim().toLowerCase().replace(/^@/, "");
@@ -102,11 +121,12 @@ function usernameRef(username) {
   return doc(db, "usernames", username);
 }
 
-// ===================================
-// 5. CHECK USERNAME AVAILABILITY
-// ===================================
+// =============================================
+// 6. CHECK USERNAME AVAILABILITY
+// =============================================
 
 async function checkUsernameAvailability() {
+  if (!usernameInput || !usernameStatus) return false;
 
   const username = normalizeUsername(usernameInput.value);
 
@@ -115,6 +135,7 @@ async function checkUsernameAvailability() {
   if (username.length < 3 || username.length > 20) {
     usernameStatus.textContent =
       "Username must be 3–20 characters.";
+
     usernameStatus.style.color = "#ff7777";
     return false;
   }
@@ -122,19 +143,18 @@ async function checkUsernameAvailability() {
   if (!validUsername(username)) {
     usernameStatus.textContent =
       "Use letters, numbers, dots and underscores. Start and end with a letter or number.";
+
     usernameStatus.style.color = "#ff7777";
     return false;
   }
 
-  usernameChecking = true;
   usernameStatus.textContent = "Checking availability...";
   usernameStatus.style.color = "#aaaabc";
 
   try {
-
     const snapshot = await getDoc(usernameRef(username));
 
-    // Prevent outdated availability responses
+    // Ignore old results if username has changed
     if (normalizeUsername(usernameInput.value) !== username) {
       return false;
     }
@@ -142,11 +162,14 @@ async function checkUsernameAvailability() {
     if (snapshot.exists()) {
       usernameStatus.textContent =
         "Username already taken. Try another.";
+
       usernameStatus.style.color = "#ff7777";
       usernameAvailable = false;
+
     } else {
       usernameStatus.textContent =
         "Username available!";
+
       usernameStatus.style.color = "#4be3a1";
       usernameAvailable = true;
     }
@@ -154,46 +177,47 @@ async function checkUsernameAvailability() {
     return usernameAvailable;
 
   } catch (error) {
+    console.error("Username check error:", error);
 
     usernameStatus.textContent =
-      "Could not check username. Check your connection.";
+      "Could not check username. Check Firestore Rules.";
+
     usernameStatus.style.color = "#ff7777";
 
-    console.error(error);
     return false;
-
-  } finally {
-    usernameChecking = false;
   }
 }
 
-// ===================================
-// 6. LIVE USERNAME CHECK
-// ===================================
+// =============================================
+// 7. LIVE USERNAME CHECK
+// =============================================
 
-usernameInput.addEventListener("input", () => {
+if (usernameInput) {
+  usernameInput.addEventListener("input", () => {
 
-  usernameInput.value =
-    usernameInput.value.toLowerCase().replace(/^@/, "");
+    usernameInput.value =
+      usernameInput.value.toLowerCase().replace(/^@/, "");
 
-  usernameAvailable = false;
+    usernameAvailable = false;
 
-  clearTimeout(usernameTimer);
+    clearTimeout(usernameTimer);
 
-  usernameStatus.textContent = "";
+    if (usernameStatus) {
+      usernameStatus.textContent = "";
+    }
 
-  if (usernameInput.value.length < 3) return;
+    if (usernameInput.value.length < 3) return;
 
-  usernameTimer = setTimeout(
-    checkUsernameAvailability,
-    500
-  );
+    usernameTimer = setTimeout(() => {
+      checkUsernameAvailability();
+    }, 500);
 
-});
+  });
+}
 
-// ===================================
-// 7. SWITCH LOGIN / REGISTER
-// ===================================
+// =============================================
+// 8. LOGIN / REGISTER SWITCH
+// =============================================
 
 function setMode(mode) {
 
@@ -201,43 +225,66 @@ function setMode(mode) {
 
   const isRegister = mode === "register";
 
-  nameGroup.hidden = !isRegister;
-  usernameGroup.hidden = !isRegister;
-  confirmGroup.hidden = !isRegister;
+  if (nameGroup) nameGroup.hidden = !isRegister;
+  if (usernameGroup) usernameGroup.hidden = !isRegister;
+  if (confirmGroup) confirmGroup.hidden = !isRegister;
 
-  nameInput.required = isRegister;
-  usernameInput.required = isRegister;
-  confirmInput.required = isRegister;
+  if (nameInput) nameInput.required = isRegister;
+  if (usernameInput) usernameInput.required = isRegister;
+  if (confirmInput) confirmInput.required = isRegister;
 
-  loginTab.classList.toggle("active", !isRegister);
-  registerTab.classList.toggle("active", isRegister);
+  if (loginTab) {
+    loginTab.classList.toggle("active", !isRegister);
+  }
 
-  formTitle.textContent = isRegister
-    ? "Create Your Account"
-    : "Welcome Back!";
+  if (registerTab) {
+    registerTab.classList.toggle("active", isRegister);
+  }
 
-  formSubtitle.textContent = isRegister
-    ? "Join DigiChat today"
-    : "Login to continue to DigiChat";
+  if (formTitle) {
+    formTitle.textContent = isRegister
+      ? "Create Your Account"
+      : "Welcome Back!";
+  }
 
-  submitBtn.textContent = isRegister
-    ? "Create Account"
-    : "Login";
+  if (formSubtitle) {
+    formSubtitle.textContent = isRegister
+      ? "Join DigiChat today"
+      : "Login to continue to DigiChat";
+  }
 
-  authForm.reset();
+  if (submitBtn) {
+    submitBtn.textContent = isRegister
+      ? "Create Account"
+      : "Login";
+  }
+
+  if (authForm) authForm.reset();
 
   usernameAvailable = false;
-  usernameStatus.textContent = "";
-  message.textContent = "";
 
+  clearTimeout(usernameTimer);
+
+  if (usernameStatus) {
+    usernameStatus.textContent = "";
+  }
+
+  if (message) {
+    message.textContent = "";
+  }
 }
 
-loginTab.addEventListener("click", () => setMode("login"));
-registerTab.addEventListener("click", () => setMode("register"));
+loginTab?.addEventListener("click", () => {
+  setMode("login");
+});
 
-// ===================================
-// 8. CREATE FIRESTORE PROFILE
-// ===================================
+registerTab?.addEventListener("click", () => {
+  setMode("register");
+});
+
+// =============================================
+// 9. SAVE NEW USER PROFILE
+// =============================================
 
 async function saveUserProfile(user, displayName, username) {
 
@@ -249,14 +296,14 @@ async function saveUserProfile(user, displayName, username) {
 
   await runTransaction(db, async (transaction) => {
 
-    // Read username first
+    // Check whether username is already reserved
     const usernameSnap = await transaction.get(nameRef);
 
     if (usernameSnap.exists()) {
       throw new Error("USERNAME_TAKEN");
     }
 
-    // Reserve unique username
+    // Reserve username
     transaction.set(nameRef, {
       uid: user.uid,
       username: username,
@@ -285,9 +332,9 @@ async function saveUserProfile(user, displayName, username) {
   return uniqueId;
 }
 
-// ===================================
-// 9. RESTORE EXISTING USER PROFILE
-// ===================================
+// =============================================
+// 10. RESTORE EXISTING USER PROFILE
+// =============================================
 
 async function ensureUserProfile(user) {
 
@@ -299,12 +346,14 @@ async function ensureUserProfile(user) {
     getDoc(privateRef)
   ]);
 
+  // Both profiles already exist
   if (publicSnap.exists() && privateSnap.exists()) {
     return publicSnap.data();
   }
 
   const batch = writeBatch(db);
 
+  // Create missing public profile
   if (!publicSnap.exists()) {
 
     batch.set(publicRef, {
@@ -317,6 +366,7 @@ async function ensureUserProfile(user) {
 
   }
 
+  // Create missing private profile
   if (!privateSnap.exists()) {
 
     batch.set(privateRef, {
@@ -333,23 +383,113 @@ async function ensureUserProfile(user) {
   return updatedProfile.data();
 }
 
-// ===================================
-// 10. REGISTRATION AND LOGIN
-// ===================================
+// =============================================
+// 11. DISPLAY USER PROFILE
+// =============================================
 
-authForm.addEventListener("submit", async (event) => {
+function displayUserProfile(user, profile) {
+
+  const displayName =
+    profile.name || user.displayName || "DigiChat User";
+
+  if (sidebarName) {
+    sidebarName.textContent = displayName;
+  }
+
+  if (sidebarEmail) {
+    sidebarEmail.textContent = user.email || "";
+  }
+
+  if (sidebarUsername) {
+
+    sidebarUsername.textContent = profile.username
+      ? "@" + profile.username
+      : "Username not set";
+
+  }
+
+  if (sidebarDigiId) {
+
+    sidebarDigiId.textContent =
+      profile.uniqueId || "DGC-" + user.uid;
+
+  }
+
+  if (sidebarAvatar) {
+
+    if (profile.photoURL) {
+
+      sidebarAvatar.style.backgroundImage =
+        `url("${profile.photoURL}")`;
+
+      sidebarAvatar.style.backgroundSize = "cover";
+      sidebarAvatar.style.backgroundPosition = "center";
+      sidebarAvatar.textContent = "";
+
+    } else {
+
+      sidebarAvatar.style.backgroundImage = "none";
+
+      sidebarAvatar.textContent =
+        displayName.charAt(0).toUpperCase();
+
+    }
+  }
+}
+
+// =============================================
+// 12. SHOW DASHBOARD
+// =============================================
+
+async function showDashboard(user) {
+
+  authView.hidden = true;
+  appView.hidden = false;
+
+  try {
+
+    const profile = await ensureUserProfile(user);
+
+    displayUserProfile(user, profile);
+
+    console.log("DigiChat Dashboard Loaded");
+
+  } catch (error) {
+
+    console.error("Profile loading error:", error);
+
+    console.error(
+      "Please check your Firestore Security Rules."
+    );
+
+  }
+}
+
+// =============================================
+// 13. REGISTRATION AND LOGIN
+// =============================================
+
+authForm?.addEventListener("submit", async (event) => {
 
   event.preventDefault();
 
   const email = emailInput.value.trim();
   const password = passwordInput.value;
-  const name = nameInput.value.trim();
-  const username = normalizeUsername(usernameInput.value);
+
+  const name = nameInput?.value.trim() || "";
+
+  const username = normalizeUsername(
+    usernameInput?.value || ""
+  );
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Please wait...";
 
   try {
+
+    // =================================
+    // REGISTRATION
+    // =================================
 
     if (currentMode === "register") {
 
@@ -373,14 +513,20 @@ authForm.addEventListener("submit", async (event) => {
         throw new Error("Passwords do not match.");
       }
 
-      // Check username before account creation
-      const availability = await getDoc(usernameRef(username));
+      // Check username again before registration
+      const availability = await getDoc(
+        usernameRef(username)
+      );
 
       if (availability.exists()) {
         throw new Error("USERNAME_TAKEN");
       }
 
-      // Create Firebase account
+      // Prevent auth-state callback from creating a profile
+      // before the username transaction completes.
+      registrationInProgress = true;
+
+      // Create Firebase Authentication account
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -389,37 +535,52 @@ authForm.addEventListener("submit", async (event) => {
 
       try {
 
-        // Set display name
+        // Save display name
         await updateProfile(result.user, {
           displayName: name
         });
 
-        // Save username and profiles atomically
+        // Save Firestore profiles and username
         await saveUserProfile(
           result.user,
           name,
           username
         );
 
+        registrationInProgress = false;
+
+        showMessage(
+          "Account created successfully! Your username is @" + username
+        );
+
+        // Open dashboard after successful profile creation
+        await showDashboard(result.user);
+
       } catch (profileError) {
 
-        // Roll back Auth account if profile creation fails
+        registrationInProgress = false;
+
+        // Delete newly created account if profile creation fails
         try {
           await deleteUser(result.user);
         } catch (deleteError) {
-          console.error("Account rollback failed:", deleteError);
+          console.error(
+            "Account rollback failed:",
+            deleteError
+          );
         }
 
         throw profileError;
       }
 
-      showMessage(
-        "Account created successfully! Your username is @" + username
-      );
+    }
 
-    } else {
+    // =================================
+    // LOGIN
+    // =================================
 
-      // Existing email/password login
+    else {
+
       await signInWithEmailAndPassword(
         auth,
         email,
@@ -431,6 +592,8 @@ authForm.addEventListener("submit", async (event) => {
     }
 
   } catch (error) {
+
+    registrationInProgress = false;
 
     const errors = {
 
@@ -448,6 +611,12 @@ authForm.addEventListener("submit", async (event) => {
 
       "auth/invalid-credential":
         "Incorrect email or password.",
+
+      "auth/user-not-found":
+        "No account found with this email.",
+
+      "auth/wrong-password":
+        "Incorrect password.",
 
       "auth/network-request-failed":
         "Check your internet connection.",
@@ -480,66 +649,48 @@ authForm.addEventListener("submit", async (event) => {
 
 });
 
-// ===================================
-// 11. AUTHENTICATION STATE
-// ===================================
+// =============================================
+// 14. FIREBASE AUTHENTICATION STATE
+// =============================================
 
 onAuthStateChanged(auth, async (user) => {
 
   if (user) {
 
-    authForm.hidden = true;
-    tabs.hidden = true;
-    authHeading.hidden = true;
-    userPanel.hidden = false;
+    // Registration handler will open dashboard
+    // after both username and profile are saved.
+    if (registrationInProgress) return;
 
-    userEmail.textContent = "Loading profile...";
-
-    try {
-
-      const profile = await ensureUserProfile(user);
-
-      userEmail.textContent =
-        user.email +
-        "\nUsername: " +
-        (profile.username
-          ? "@" + profile.username
-          : "Not set - username claim required");
-
-    } catch (error) {
-
-      userEmail.textContent =
-        "Profile loading failed. Please contact support.";
-
-      console.error("Profile Error:", error);
-
-    }
+    await showDashboard(user);
 
   } else {
 
-    authForm.hidden = false;
-    tabs.hidden = false;
-    authHeading.hidden = false;
-    userPanel.hidden = true;
+    appView.hidden = true;
+    authView.hidden = false;
+
+    setMode("login");
 
   }
 
 });
 
-// ===================================
-// 12. LOGOUT
-// ===================================
+// =============================================
+// 15. LOGOUT
+// =============================================
 
-logoutBtn.addEventListener("click", async () => {
+logoutBtn?.addEventListener("click", async () => {
 
   try {
 
     await signOut(auth);
+
     setMode("login");
 
-    showMessage("Logged out successfully!");
+    console.log("User logged out.");
 
   } catch (error) {
+
+    console.error("Logout error:", error);
 
     showMessage(error.message, "error");
 
@@ -547,4 +698,69 @@ logoutBtn.addEventListener("click", async () => {
 
 });
 
-console.log("DigiChat Username & Authentication System Ready!");
+// =============================================
+// 16. SIDEBAR NAVIGATION
+// =============================================
+
+navButtons.forEach((button) => {
+
+  button.addEventListener("click", () => {
+
+    // Remove active state from all buttons
+    navButtons.forEach((item) => {
+      item.classList.remove("active");
+    });
+
+    // Activate clicked button
+    button.classList.add("active");
+
+    const page = button.dataset.page;
+
+    const titles = {
+      messages: "Messages",
+      contacts: "Contacts",
+      profile: "My Profile",
+      settings: "Settings"
+    };
+
+    if (listTitle) {
+      listTitle.textContent = titles[page] || "DigiChat";
+    }
+
+    console.log("Selected page:", page);
+
+  });
+
+});
+
+// =============================================
+// 17. SEARCH FORM PLACEHOLDER
+// =============================================
+
+searchForm?.addEventListener("submit", (event) => {
+
+  event.preventDefault();
+
+  // User search will be connected to Firestore
+  // in the next development step.
+
+});
+
+// =============================================
+// 18. MESSAGE FORM PLACEHOLDER
+// =============================================
+
+messageForm?.addEventListener("submit", (event) => {
+
+  event.preventDefault();
+
+  // Real-time messaging will be connected
+  // to Firestore in the next development step.
+
+});
+
+// =============================================
+// 19. APPLICATION READY
+// =============================================
+
+console.log("DigiChat Application Initialized!");
