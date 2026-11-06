@@ -15,6 +15,13 @@ import {
   getFirestore,
   doc,
   getDoc,
+  setDoc,
+  deleteDoc,
+  getDocs,
+  collection,
+  query,
+  where,
+  limit,
   runTransaction,
   writeBatch,
   serverTimestamp
@@ -41,7 +48,6 @@ const db = getFirestore(app);
 // 2. HTML ELEMENTS
 // =============================================
 
-// Authentication
 const authView = document.getElementById("authView");
 const appView = document.getElementById("appView");
 const authForm = document.getElementById("authForm");
@@ -67,7 +73,6 @@ const message = document.getElementById("message");
 const formTitle = document.getElementById("formTitle");
 const formSubtitle = document.getElementById("formSubtitle");
 
-// Dashboard
 const logoutBtn = document.getElementById("logoutBtn");
 
 const sidebarAvatar = document.getElementById("sidebarAvatar");
@@ -81,7 +86,11 @@ const listTitle = document.getElementById("listTitle");
 const navButtons = document.querySelectorAll(".nav-item");
 
 const searchForm = document.getElementById("searchForm");
-const messageForm = document.getElementById("messageForm");
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+const conversationsList = document.getElementById("conversationsList");
+
+const newChatBtn = document.getElementById("newChatBtn");
 
 // =============================================
 // 3. APPLICATION STATE
@@ -89,25 +98,20 @@ const messageForm = document.getElementById("messageForm");
 
 let currentMode = "login";
 let usernameTimer = null;
-let usernameAvailable = false;
-let registrationInProgress = false;
+let isCreatingAccount = false;
+let currentUserProfile = null;
 
 // =============================================
-// 4. MESSAGE DISPLAY
+// 4. COMMON HELPERS
 // =============================================
 
 function showMessage(text, type = "success") {
   if (!message) return;
 
   message.textContent = text;
-
   message.style.color =
     type === "error" ? "#ff7777" : "#4be3a1";
 }
-
-// =============================================
-// 5. USERNAME VALIDATION
-// =============================================
 
 function normalizeUsername(value) {
   return value.trim().toLowerCase().replace(/^@/, "");
@@ -121,21 +125,24 @@ function usernameRef(username) {
   return doc(db, "usernames", username);
 }
 
+function createElement(tag, className, text) {
+  const element = document.createElement(tag);
+
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+
+  return element;
+}
+
 // =============================================
-// 6. CHECK USERNAME AVAILABILITY
+// 5. USERNAME AVAILABILITY
 // =============================================
 
 async function checkUsernameAvailability() {
-  if (!usernameInput || !usernameStatus) return false;
-
   const username = normalizeUsername(usernameInput.value);
 
-  usernameAvailable = false;
-
   if (username.length < 3 || username.length > 20) {
-    usernameStatus.textContent =
-      "Username must be 3–20 characters.";
-
+    usernameStatus.textContent = "Username must be 3–20 characters.";
     usernameStatus.style.color = "#ff7777";
     return false;
   }
@@ -148,196 +155,136 @@ async function checkUsernameAvailability() {
     return false;
   }
 
-  usernameStatus.textContent = "Checking availability...";
-  usernameStatus.style.color = "#aaaabc";
+  usernameStatus.textContent = "Checking...";
+  usernameStatus.style.color = "#94a3b8";
 
   try {
     const snapshot = await getDoc(usernameRef(username));
 
-    // Ignore old results if username has changed
     if (normalizeUsername(usernameInput.value) !== username) {
       return false;
     }
 
     if (snapshot.exists()) {
-      usernameStatus.textContent =
-        "Username already taken. Try another.";
-
+      usernameStatus.textContent = "Username already taken.";
       usernameStatus.style.color = "#ff7777";
-      usernameAvailable = false;
-
-    } else {
-      usernameStatus.textContent =
-        "Username available!";
-
-      usernameStatus.style.color = "#4be3a1";
-      usernameAvailable = true;
+      return false;
     }
 
-    return usernameAvailable;
+    usernameStatus.textContent = "Username available!";
+    usernameStatus.style.color = "#4be3a1";
+    return true;
 
   } catch (error) {
-    console.error("Username check error:", error);
+    console.error(error);
 
     usernameStatus.textContent =
       "Could not check username. Check Firestore Rules.";
 
     usernameStatus.style.color = "#ff7777";
-
     return false;
   }
 }
 
-// =============================================
-// 7. LIVE USERNAME CHECK
-// =============================================
+usernameInput?.addEventListener("input", () => {
+  usernameInput.value = usernameInput.value
+    .toLowerCase()
+    .replace(/^@/, "");
 
-if (usernameInput) {
-  usernameInput.addEventListener("input", () => {
+  clearTimeout(usernameTimer);
+  usernameStatus.textContent = "";
 
-    usernameInput.value =
-      usernameInput.value.toLowerCase().replace(/^@/, "");
+  if (usernameInput.value.length < 3) return;
 
-    usernameAvailable = false;
-
-    clearTimeout(usernameTimer);
-
-    if (usernameStatus) {
-      usernameStatus.textContent = "";
-    }
-
-    if (usernameInput.value.length < 3) return;
-
-    usernameTimer = setTimeout(() => {
-      checkUsernameAvailability();
-    }, 500);
-
-  });
-}
+  usernameTimer = setTimeout(checkUsernameAvailability, 500);
+});
 
 // =============================================
-// 8. LOGIN / REGISTER SWITCH
+// 6. LOGIN / REGISTER SWITCH
 // =============================================
 
 function setMode(mode) {
-
   currentMode = mode;
 
   const isRegister = mode === "register";
 
-  if (nameGroup) nameGroup.hidden = !isRegister;
-  if (usernameGroup) usernameGroup.hidden = !isRegister;
-  if (confirmGroup) confirmGroup.hidden = !isRegister;
+  nameGroup.hidden = !isRegister;
+  usernameGroup.hidden = !isRegister;
+  confirmGroup.hidden = !isRegister;
 
-  if (nameInput) nameInput.required = isRegister;
-  if (usernameInput) usernameInput.required = isRegister;
-  if (confirmInput) confirmInput.required = isRegister;
+  nameInput.required = isRegister;
+  usernameInput.required = isRegister;
+  confirmInput.required = isRegister;
 
-  if (loginTab) {
-    loginTab.classList.toggle("active", !isRegister);
-  }
+  loginTab.classList.toggle("active", !isRegister);
+  registerTab.classList.toggle("active", isRegister);
 
-  if (registerTab) {
-    registerTab.classList.toggle("active", isRegister);
-  }
+  formTitle.textContent = isRegister
+    ? "Create Your Account"
+    : "Welcome Back!";
 
-  if (formTitle) {
-    formTitle.textContent = isRegister
-      ? "Create Your Account"
-      : "Welcome Back!";
-  }
+  formSubtitle.textContent = isRegister
+    ? "Join DigiChat today"
+    : "Login to continue to DigiChat";
 
-  if (formSubtitle) {
-    formSubtitle.textContent = isRegister
-      ? "Join DigiChat today"
-      : "Login to continue to DigiChat";
-  }
+  submitBtn.textContent = isRegister
+    ? "Create Account"
+    : "Login";
 
-  if (submitBtn) {
-    submitBtn.textContent = isRegister
-      ? "Create Account"
-      : "Login";
-  }
-
-  if (authForm) authForm.reset();
-
-  usernameAvailable = false;
+  authForm.reset();
+  usernameStatus.textContent = "";
+  message.textContent = "";
 
   clearTimeout(usernameTimer);
-
-  if (usernameStatus) {
-    usernameStatus.textContent = "";
-  }
-
-  if (message) {
-    message.textContent = "";
-  }
 }
 
-loginTab?.addEventListener("click", () => {
-  setMode("login");
-});
-
-registerTab?.addEventListener("click", () => {
-  setMode("register");
-});
+loginTab.addEventListener("click", () => setMode("login"));
+registerTab.addEventListener("click", () => setMode("register"));
 
 // =============================================
-// 9. SAVE NEW USER PROFILE
+// 7. SAVE NEW USER PROFILE
 // =============================================
 
-async function saveUserProfile(user, displayName, username) {
-
-  const uniqueId = "DGC-" + user.uid;
-
+async function saveUserProfile(user, name, username) {
   const publicRef = doc(db, "publicProfiles", user.uid);
   const privateRef = doc(db, "privateUsers", user.uid);
   const nameRef = usernameRef(username);
 
   await runTransaction(db, async (transaction) => {
-
-    // Check whether username is already reserved
     const usernameSnap = await transaction.get(nameRef);
 
     if (usernameSnap.exists()) {
       throw new Error("USERNAME_TAKEN");
     }
 
-    // Reserve username
     transaction.set(nameRef, {
       uid: user.uid,
-      username: username,
+      username,
       createdAt: serverTimestamp()
     });
 
-    // Public profile
     transaction.set(publicRef, {
-      name: displayName,
-      username: username,
+      name,
+      username,
       usernameLower: username,
-      uniqueId: uniqueId,
+      uniqueId: "DGC-" + user.uid,
       photoURL: user.photoURL || "",
       status: "active",
       createdAt: serverTimestamp()
     });
 
-    // Private profile
     transaction.set(privateRef, {
       email: user.email,
       createdAt: serverTimestamp()
     });
-
   });
-
-  return uniqueId;
 }
 
 // =============================================
-// 10. RESTORE EXISTING USER PROFILE
+// 8. RESTORE EXISTING USER PROFILE
 // =============================================
 
 async function ensureUserProfile(user) {
-
   const publicRef = doc(db, "publicProfiles", user.uid);
   const privateRef = doc(db, "privateUsers", user.uid);
 
@@ -346,16 +293,13 @@ async function ensureUserProfile(user) {
     getDoc(privateRef)
   ]);
 
-  // Both profiles already exist
   if (publicSnap.exists() && privateSnap.exists()) {
     return publicSnap.data();
   }
 
   const batch = writeBatch(db);
 
-  // Create missing public profile
   if (!publicSnap.exists()) {
-
     batch.set(publicRef, {
       name: user.displayName || user.email.split("@")[0],
       uniqueId: "DGC-" + user.uid,
@@ -363,170 +307,107 @@ async function ensureUserProfile(user) {
       status: "active",
       createdAt: serverTimestamp()
     });
-
   }
 
-  // Create missing private profile
   if (!privateSnap.exists()) {
-
     batch.set(privateRef, {
       email: user.email,
       createdAt: serverTimestamp()
     });
-
   }
 
   await batch.commit();
 
-  const updatedProfile = await getDoc(publicRef);
-
-  return updatedProfile.data();
+  const updated = await getDoc(publicRef);
+  return updated.data();
 }
 
 // =============================================
-// 11. DISPLAY USER PROFILE
+// 9. DISPLAY PROFILE
 // =============================================
 
 function displayUserProfile(user, profile) {
+  currentUserProfile = profile;
 
-  const displayName =
-    profile.name || user.displayName || "DigiChat User";
+  const name = profile.name || user.displayName || "DigiChat User";
 
-  if (sidebarName) {
-    sidebarName.textContent = displayName;
-  }
+  sidebarName.textContent = name;
+  sidebarEmail.textContent = user.email || "";
 
-  if (sidebarEmail) {
-    sidebarEmail.textContent = user.email || "";
-  }
+  sidebarUsername.textContent = profile.username
+    ? "@" + profile.username
+    : "Username not set";
 
-  if (sidebarUsername) {
+  sidebarDigiId.textContent =
+    profile.uniqueId || "DGC-" + user.uid;
 
-    sidebarUsername.textContent = profile.username
-      ? "@" + profile.username
-      : "Username not set";
+  if (profile.photoURL) {
+    sidebarAvatar.style.backgroundImage =
+      `url("${profile.photoURL}")`;
 
-  }
-
-  if (sidebarDigiId) {
-
-    sidebarDigiId.textContent =
-      profile.uniqueId || "DGC-" + user.uid;
-
-  }
-
-  if (sidebarAvatar) {
-
-    if (profile.photoURL) {
-
-      sidebarAvatar.style.backgroundImage =
-        `url("${profile.photoURL}")`;
-
-      sidebarAvatar.style.backgroundSize = "cover";
-      sidebarAvatar.style.backgroundPosition = "center";
-      sidebarAvatar.textContent = "";
-
-    } else {
-
-      sidebarAvatar.style.backgroundImage = "none";
-
-      sidebarAvatar.textContent =
-        displayName.charAt(0).toUpperCase();
-
-    }
+    sidebarAvatar.style.backgroundSize = "cover";
+    sidebarAvatar.style.backgroundPosition = "center";
+    sidebarAvatar.textContent = "";
+  } else {
+    sidebarAvatar.style.backgroundImage = "none";
+    sidebarAvatar.textContent = name.charAt(0).toUpperCase();
   }
 }
 
-// =============================================
-// 12. SHOW DASHBOARD
-// =============================================
-
 async function showDashboard(user) {
-
   authView.hidden = true;
   appView.hidden = false;
 
   try {
-
     const profile = await ensureUserProfile(user);
-
     displayUserProfile(user, profile);
-
     console.log("DigiChat Dashboard Loaded");
-
   } catch (error) {
-
     console.error("Profile loading error:", error);
-
-    console.error(
-      "Please check your Firestore Security Rules."
-    );
-
   }
 }
 
 // =============================================
-// 13. REGISTRATION AND LOGIN
+// 10. REGISTRATION AND LOGIN
 // =============================================
 
-authForm?.addEventListener("submit", async (event) => {
-
+authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const email = emailInput.value.trim();
   const password = passwordInput.value;
-
-  const name = nameInput?.value.trim() || "";
-
-  const username = normalizeUsername(
-    usernameInput?.value || ""
-  );
+  const name = nameInput.value.trim();
+  const username = normalizeUsername(usernameInput.value);
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Please wait...";
 
   try {
-
-    // =================================
-    // REGISTRATION
-    // =================================
-
     if (currentMode === "register") {
-
       if (name.length < 2) {
         throw new Error("Please enter your full name.");
       }
 
       if (!validUsername(username)) {
-        throw new Error(
-          "Username must be 3–20 characters. Use letters, numbers, dots or underscores."
-        );
+        throw new Error("Please enter a valid username.");
       }
 
       if (password.length < 6) {
-        throw new Error(
-          "Password must contain at least 6 characters."
-        );
+        throw new Error("Password must contain at least 6 characters.");
       }
 
       if (password !== confirmInput.value) {
         throw new Error("Passwords do not match.");
       }
 
-      // Check username again before registration
-      const availability = await getDoc(
-        usernameRef(username)
-      );
+      const usernameSnap = await getDoc(usernameRef(username));
 
-      if (availability.exists()) {
+      if (usernameSnap.exists()) {
         throw new Error("USERNAME_TAKEN");
       }
 
-      // Prevent auth-state callback from creating a profile
-      // before the username transaction completes.
-      registrationInProgress = true;
+      isCreatingAccount = true;
 
-      // Create Firebase Authentication account
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -534,184 +415,468 @@ authForm?.addEventListener("submit", async (event) => {
       );
 
       try {
-
-        // Save display name
         await updateProfile(result.user, {
           displayName: name
         });
 
-        // Save Firestore profiles and username
-        await saveUserProfile(
-          result.user,
-          name,
-          username
-        );
+        await saveUserProfile(result.user, name, username);
 
-        registrationInProgress = false;
-
-        showMessage(
-          "Account created successfully! Your username is @" + username
-        );
-
-        // Open dashboard after successful profile creation
+        isCreatingAccount = false;
         await showDashboard(result.user);
 
-      } catch (profileError) {
+      } catch (error) {
+        isCreatingAccount = false;
 
-        registrationInProgress = false;
-
-        // Delete newly created account if profile creation fails
         try {
           await deleteUser(result.user);
         } catch (deleteError) {
-          console.error(
-            "Account rollback failed:",
-            deleteError
-          );
+          console.error("Account cleanup error:", deleteError);
         }
 
-        throw profileError;
+        throw error;
       }
 
-    }
-
-    // =================================
-    // LOGIN
-    // =================================
-
-    else {
-
-      await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      showMessage("Login successful!");
-
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
     }
 
   } catch (error) {
-
-    registrationInProgress = false;
+    isCreatingAccount = false;
 
     const errors = {
-
-      "USERNAME_TAKEN":
-        "This username is already taken. Please choose another.",
-
-      "auth/email-already-in-use":
-        "This email is already registered.",
-
-      "auth/invalid-email":
-        "Please enter a valid email address.",
-
-      "auth/weak-password":
-        "Password must be at least 6 characters.",
-
-      "auth/invalid-credential":
-        "Incorrect email or password.",
-
-      "auth/user-not-found":
-        "No account found with this email.",
-
-      "auth/wrong-password":
-        "Incorrect password.",
-
-      "auth/network-request-failed":
-        "Check your internet connection.",
-
-      "auth/too-many-requests":
-        "Too many attempts. Try again later.",
-
-      "permission-denied":
-        "Database permission denied. Check Firestore Rules."
-
+      "USERNAME_TAKEN": "Username already taken. Try another.",
+      "auth/email-already-in-use": "Email already registered.",
+      "auth/invalid-email": "Enter a valid email address.",
+      "auth/weak-password": "Password must be at least 6 characters.",
+      "auth/invalid-credential": "Incorrect email or password.",
+      "auth/user-not-found": "Account not found.",
+      "auth/wrong-password": "Incorrect password.",
+      "auth/network-request-failed": "Check your internet connection.",
+      "auth/too-many-requests": "Too many attempts. Try again later."
     };
 
-    showMessage(
-      errors[error.code] || error.message,
-      "error"
-    );
+    showMessage(errors[error.code] || errors[error.message] || error.message, "error");
 
-    console.error("DigiChat Error:", error);
+    console.error("Authentication error:", error);
 
   } finally {
-
     submitBtn.disabled = false;
 
     submitBtn.textContent =
-      currentMode === "register"
-        ? "Create Account"
-        : "Login";
-
+      currentMode === "register" ? "Create Account" : "Login";
   }
-
 });
 
 // =============================================
-// 14. FIREBASE AUTHENTICATION STATE
+// 11. AUTHENTICATION STATE
 // =============================================
 
 onAuthStateChanged(auth, async (user) => {
+  if (isCreatingAccount) return;
 
   if (user) {
-
-    // Registration handler will open dashboard
-    // after both username and profile are saved.
-    if (registrationInProgress) return;
-
     await showDashboard(user);
-
   } else {
-
+    currentUserProfile = null;
     appView.hidden = true;
     authView.hidden = false;
-
     setMode("login");
-
   }
-
 });
 
 // =============================================
-// 15. LOGOUT
+// 12. LOGOUT
 // =============================================
 
-logoutBtn?.addEventListener("click", async () => {
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Logout error:", error);
+    alert("Logout failed: " + error.message);
+  }
+});
+
+// =============================================
+// 13. SEARCH USERS
+// =============================================
+
+function showSearchMessage(text) {
+  searchResults.replaceChildren();
+
+  const p = createElement("p", "search-info", text);
+  searchResults.appendChild(p);
+
+  searchResults.hidden = false;
+}
+
+async function findUser(searchValue) {
+  const term = searchValue.trim();
+
+  if (!term) return null;
+
+  // Search by username
+  if (term.startsWith("@") || !term.toUpperCase().startsWith("DGC-")) {
+    const username = normalizeUsername(term);
+
+    if (!validUsername(username)) return null;
+
+    const usernameSnap = await getDoc(usernameRef(username));
+
+    if (!usernameSnap.exists()) return null;
+
+    const uid = usernameSnap.data().uid;
+
+    if (uid === auth.currentUser.uid) {
+      return { ownAccount: true };
+    }
+
+    const profileSnap = await getDoc(
+      doc(db, "publicProfiles", uid)
+    );
+
+    if (!profileSnap.exists()) return null;
+
+    return {
+      uid,
+      ...profileSnap.data()
+    };
+  }
+
+  // Search by DigiChat ID
+  const idQuery = query(
+    collection(db, "publicProfiles"),
+    where("uniqueId", "==", term),
+    limit(1)
+  );
+
+  const result = await getDocs(idQuery);
+
+  if (result.empty) return null;
+
+  const profileDoc = result.docs[0];
+
+  if (profileDoc.id === auth.currentUser.uid) {
+    return { ownAccount: true };
+  }
+
+  return {
+    uid: profileDoc.id,
+    ...profileDoc.data()
+  };
+}
+
+// =============================================
+// 14. RENDER SEARCH RESULT
+// =============================================
+
+async function isAlreadyContact(uid) {
+  const contactRef = doc(
+    db,
+    "contacts",
+    auth.currentUser.uid,
+    "items",
+    uid
+  );
+
+  const snap = await getDoc(contactRef);
+  return snap.exists();
+}
+
+function renderSearchResult(profile, alreadyAdded) {
+  searchResults.replaceChildren();
+
+  const card = createElement("div", "user-result-card");
+
+  const avatar = createElement(
+    "div",
+    "avatar",
+    (profile.name || "U").charAt(0).toUpperCase()
+  );
+
+  const info = createElement("div", "user-result-info");
+  const name = createElement("h3", "", profile.name || "DigiChat User");
+  const username = createElement(
+    "p",
+    "",
+    profile.username ? "@" + profile.username : "Username unavailable"
+  );
+  const digiId = createElement(
+    "small",
+    "",
+    profile.uniqueId || ""
+  );
+
+  info.append(name, username, digiId);
+
+  const addButton = createElement(
+    "button",
+    "add-contact-btn",
+    alreadyAdded ? "Added" : "Add Contact"
+  );
+
+  addButton.type = "button";
+  addButton.disabled = alreadyAdded;
+
+  if (!alreadyAdded) {
+    addButton.addEventListener("click", async () => {
+      addButton.disabled = true;
+      addButton.textContent = "Adding...";
+
+      try {
+        await addContact(profile);
+
+        addButton.textContent = "Added";
+        await loadContacts();
+
+      } catch (error) {
+        console.error("Add contact error:", error);
+        addButton.disabled = false;
+        addButton.textContent = "Add Contact";
+        alert("Could not add contact: " + error.message);
+      }
+    });
+  }
+
+  card.append(avatar, info, addButton);
+  searchResults.appendChild(card);
+  searchResults.hidden = false;
+}
+
+// =============================================
+// 15. SEARCH ACTION
+// =============================================
+
+async function performUserSearch() {
+  const term = searchInput.value.trim();
+
+  if (!term) {
+    searchResults.hidden = true;
+    searchResults.replaceChildren();
+    return;
+  }
+
+  if (!auth.currentUser) return;
+
+  showSearchMessage("Searching DigiChat users...");
 
   try {
+    const profile = await findUser(term);
 
-    await signOut(auth);
+    if (!profile) {
+      showSearchMessage("No user found. Check the username or DigiChat ID.");
+      return;
+    }
 
-    setMode("login");
+    if (profile.ownAccount) {
+      showSearchMessage("This is your own account.");
+      return;
+    }
 
-    console.log("User logged out.");
+    const alreadyAdded = await isAlreadyContact(profile.uid);
+
+    renderSearchResult(profile, alreadyAdded);
 
   } catch (error) {
+    console.error("Search error:", error);
 
-    console.error("Logout error:", error);
-
-    showMessage(error.message, "error");
-
+    showSearchMessage(
+      "Search failed. Please check your internet connection and Firestore Rules."
+    );
   }
+}
 
+searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  performUserSearch();
+});
+
+let searchTimer;
+
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+
+  searchTimer = setTimeout(() => {
+    const term = searchInput.value.trim();
+
+    if (term.length >= 3) {
+      performUserSearch();
+    } else {
+      searchResults.hidden = true;
+      searchResults.replaceChildren();
+    }
+  }, 600);
+});
+
+newChatBtn.addEventListener("click", () => {
+  searchInput.focus();
+  searchInput.placeholder = "Enter @username or DigiChat ID";
 });
 
 // =============================================
-// 16. SIDEBAR NAVIGATION
+// 16. ADD CONTACT
+// =============================================
+
+async function addContact(profile) {
+  const currentUid = auth.currentUser.uid;
+
+  if (profile.uid === currentUid) {
+    throw new Error("You cannot add yourself.");
+  }
+
+  const contactRef = doc(
+    db,
+    "contacts",
+    currentUid,
+    "items",
+    profile.uid
+  );
+
+  const existing = await getDoc(contactRef);
+
+  if (existing.exists()) {
+    throw new Error("This user is already in your contacts.");
+  }
+
+  await setDoc(contactRef, {
+    uid: profile.uid,
+    name: profile.name || "DigiChat User",
+    username: profile.username || "",
+    uniqueId: profile.uniqueId || "",
+    addedAt: serverTimestamp()
+  });
+}
+
+// =============================================
+// 17. LOAD CONTACTS
+// =============================================
+
+async function loadContacts() {
+  if (!auth.currentUser) return;
+
+  conversationsList.replaceChildren();
+
+  const loading = createElement(
+    "p",
+    "search-info",
+    "Loading contacts..."
+  );
+
+  conversationsList.appendChild(loading);
+
+  try {
+    const contactsRef = collection(
+      db,
+      "contacts",
+      auth.currentUser.uid,
+      "items"
+    );
+
+    const snapshot = await getDocs(contactsRef);
+
+    conversationsList.replaceChildren();
+
+    if (snapshot.empty) {
+      const empty = createElement("div", "empty-state");
+
+      empty.append(
+        createElement("div", "empty-icon", "♟"),
+        createElement("h3", "", "No contacts yet"),
+        createElement(
+          "p",
+          "",
+          "Search for people using their username or DigiChat ID."
+        )
+      );
+
+      conversationsList.appendChild(empty);
+      return;
+    }
+
+    snapshot.forEach((contactDoc) => {
+      const contact = contactDoc.data();
+
+      const card = createElement("div", "contact-card");
+
+      const avatar = createElement(
+        "div",
+        "avatar",
+        (contact.name || "U").charAt(0).toUpperCase()
+      );
+
+      const info = createElement("div", "contact-info");
+
+      info.append(
+        createElement("h3", "", contact.name || "DigiChat User"),
+        createElement(
+          "p",
+          "",
+          contact.username ? "@" + contact.username : "No username"
+        ),
+        createElement("small", "", contact.uniqueId || "")
+      );
+
+      const removeButton = createElement(
+        "button",
+        "remove-contact-btn",
+        "Remove"
+      );
+
+      removeButton.type = "button";
+
+      removeButton.addEventListener("click", async () => {
+        const confirmed = confirm(
+          "Remove " + (contact.name || "this user") + " from contacts?"
+        );
+
+        if (!confirmed) return;
+
+        try {
+          await deleteDoc(
+            doc(
+              db,
+              "contacts",
+              auth.currentUser.uid,
+              "items",
+              contactDoc.id
+            )
+          );
+
+          await loadContacts();
+
+        } catch (error) {
+          console.error("Remove contact error:", error);
+          alert("Could not remove contact: " + error.message);
+        }
+      });
+
+      card.append(avatar, info, removeButton);
+      conversationsList.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error("Load contacts error:", error);
+
+    conversationsList.replaceChildren(
+      createElement(
+        "p",
+        "search-info",
+        "Could not load contacts. Check Firestore Rules."
+      )
+    );
+  }
+}
+
+// =============================================
+// 18. SIDEBAR NAVIGATION
 // =============================================
 
 navButtons.forEach((button) => {
-
-  button.addEventListener("click", () => {
-
-    // Remove active state from all buttons
+  button.addEventListener("click", async () => {
     navButtons.forEach((item) => {
       item.classList.remove("active");
     });
 
-    // Activate clicked button
     button.classList.add("active");
 
     const page = button.dataset.page;
@@ -723,44 +888,76 @@ navButtons.forEach((button) => {
       settings: "Settings"
     };
 
-    if (listTitle) {
-      listTitle.textContent = titles[page] || "DigiChat";
+    listTitle.textContent = titles[page] || "DigiChat";
+
+    if (page === "contacts") {
+      searchResults.hidden = true;
+      await loadContacts();
     }
 
-    console.log("Selected page:", page);
+    if (page === "messages") {
+      conversationsList.replaceChildren();
 
+      const empty = createElement("div", "empty-state");
+
+      empty.append(
+        createElement("div", "empty-icon", "☏"),
+        createElement("h3", "", "No conversations yet"),
+        createElement(
+          "p",
+          "",
+          "Find people and start your first conversation."
+        )
+      );
+
+      conversationsList.appendChild(empty);
+    }
+
+    if (page === "profile") {
+      conversationsList.replaceChildren();
+
+      const info = createElement("div", "empty-state");
+
+      info.append(
+        createElement("h3", "", currentUserProfile?.name || "My Profile"),
+        createElement(
+          "p",
+          "",
+          currentUserProfile?.username
+            ? "@" + currentUserProfile.username
+            : "Username not set"
+        ),
+        createElement(
+          "p",
+          "",
+          currentUserProfile?.uniqueId || ""
+        )
+      );
+
+      conversationsList.appendChild(info);
+    }
+
+    if (page === "settings") {
+      conversationsList.replaceChildren();
+
+      const info = createElement("div", "empty-state");
+
+      info.append(
+        createElement("h3", "", "Settings"),
+        createElement(
+          "p",
+          "",
+          "More account settings will be available soon."
+        )
+      );
+
+      conversationsList.appendChild(info);
+    }
   });
-
 });
 
 // =============================================
-// 17. SEARCH FORM PLACEHOLDER
+// 19. INITIAL APPLICATION STATE
 // =============================================
 
-searchForm?.addEventListener("submit", (event) => {
-
-  event.preventDefault();
-
-  // User search will be connected to Firestore
-  // in the next development step.
-
-});
-
-// =============================================
-// 18. MESSAGE FORM PLACEHOLDER
-// =============================================
-
-messageForm?.addEventListener("submit", (event) => {
-
-  event.preventDefault();
-
-  // Real-time messaging will be connected
-  // to Firestore in the next development step.
-
-});
-
-// =============================================
-// 19. APPLICATION READY
-// =============================================
-
-console.log("DigiChat Application Initialized!");
+console.log("DigiChat User Search & Contacts Ready!");
