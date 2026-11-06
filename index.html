@@ -4,108 +4,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#10111b">
-
-  <title>DigiChat | Connect Instantly</title>
-  <meta name="description" content="DigiChat - Connect, communicate and share instantly.">
-
+  <meta name="theme-color" content="#10131c">
+  <title>DigiChat - Messaging</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="app-container">
+  <!-- AUTHENTICATION VIEW -->
+  <section id="authView" class="auth-view">
+    <div class="auth-container">
 
-  <!-- ================= AUTHENTICATION ================= -->
-
-  <section id="authView">
-
-    <header class="brand">
-      <div class="brand-icon">D</div>
-      <h1>Digi<span>Chat</span></h1>
-      <p>Connect. Chat. Communicate.</p>
-    </header>
-
-    <main class="auth-card">
-
-      <div class="auth-heading">
-        <h2 id="formTitle">Welcome Back!</h2>
-        <p id="formSubtitle">Login to continue to DigiChat</p>
+      <div class="auth-brand">
+        <div class="brand-icon">D</div>
+        <h1>DigiChat</h1>
+        <p>Connect. Chat. Communicate.</p>
       </div>
 
-      <div class="tabs">
-        <button type="button" id="loginTab" class="tab active">Login</button>
-        <button type="button" id="registerTab" class="tab">Register</button>
+      <div class="auth-tabs">
+        <button type="button" id="loginTab" class="auth-tab active">
+          Login
+        </button>
+        <button type="button" id="registerTab" class="auth-tab">
+          Register
+        </button>
       </div>
 
       <form id="authForm">
 
-        <!-- Full Name -->
-        <div class="form-group" id="nameGroup" hidden>
+        <h2 id="formTitle">Welcome Back!</h2>
+        <p id="formSubtitle">Login to continue to DigiChat</p>
+
+        <div id="nameGroup" class="form-group" hidden>
           <label for="name">Full Name</label>
           <input
             type="text"
             id="name"
             placeholder="Enter your full name"
             autocomplete="name"
-            minlength="2"
           >
         </div>
 
-        <!-- Username -->
-        <div class="form-group" id="usernameGroup" hidden>
-          <label for="username">DigiChat Username</label>
-
-          <div class="username-input">
-            <span>@</span>
-            <input
-              type="text"
-              id="username"
-              placeholder="yourusername"
-              minlength="3"
-              maxlength="20"
-              autocomplete="username"
-              autocapitalize="none"
-              spellcheck="false"
-            >
-          </div>
-
-          <small class="field-help">
-            Your unique identity on DigiChat. Use 3–20 letters,
-            numbers, dots or underscores.
-          </small>
-
-          <p id="usernameStatus" class="username-status"
-             aria-live="polite"></p>
+        <div id="usernameGroup" class="form-group" hidden>
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            placeholder="Choose username"
+            autocomplete="username"
+          >
+          <small id="usernameStatus"></small>
         </div>
 
-        <!-- Email -->
         <div class="form-group">
           <label for="email">Email Address</label>
           <input
             type="email"
             id="email"
-            placeholder="Enter your email"
+            placeholder="Enter email address"
             autocomplete="email"
             required
           >
         </div>
 
-        <!-- Password -->
         <div class="form-group">
           <label for="password">Password</label>
           <input
             type="password"
             id="password"
             placeholder="Enter password"
-            minlength="6"
             autocomplete="current-password"
             required
           >
         </div>
 
-        <!-- Confirm Password -->
-        <div class="form-group" id="confirmGroup" hidden>
+        <div id="confirmGroup" class="form-group" hidden>
           <label for="confirmPassword">Confirm Password</label>
           <input
             type="password"
@@ -115,250 +88,210 @@
           >
         </div>
 
+        <p id="message" class="form-message"></p>
+
         <button type="submit" id="submitBtn" class="primary-btn">
           Login
         </button>
 
       </form>
-
-      <p id="message" class="message" aria-live="polite"></p>
-
-      <div class="auth-footer">
-        <p>By continuing, you agree to use DigiChat responsibly.</p>
-      </div>
-
-    </main>
-
-    <footer>
-      <p>© 2026 DigiTech Ecosystem | DigiChat</p>
-      <p>Made for better connections ❤️</p>
-    </footer>
-
+    </div>
   </section>
 
 
-  <!-- ================= MAIN DASHBOARD ================= -->
-
+  <!-- MAIN APPLICATION -->
   <section id="appView" hidden>
 
     <div class="dashboard">
 
       <!-- LEFT SIDEBAR -->
-
       <aside class="sidebar">
 
         <div class="sidebar-brand">
           <div class="brand-icon">D</div>
-          <h2>Digi<span>Chat</span></h2>
+          <h2>DigiChat</h2>
         </div>
 
-        <!-- My Account -->
-
         <div class="account-card">
-
-          <div class="avatar" id="sidebarAvatar">D</div>
+          <div class="account-avatar" id="sidebarAvatar">D</div>
 
           <div class="account-info">
             <h3 id="sidebarName">User</h3>
-            <p id="sidebarEmail">Loading...</p>
-            <p id="sidebarUsername">@username</p>
-            <p id="sidebarDigiId">DigiChat ID</p>
+            <p id="sidebarEmail"></p>
+            <p id="sidebarUsername"></p>
+            <small id="sidebarDigiId"></small>
           </div>
-
         </div>
 
-        <!-- Navigation -->
+        <p class="menu-heading">MENU</p>
 
-        <div class="sidebar-menu">
+        <nav class="sidebar-menu">
 
-          <p class="menu-heading">MENU</p>
-
-          <button class="nav-item active" data-page="messages">
-            <span>▣</span> Messages
+          <button
+            type="button"
+            class="nav-item active"
+            data-page="messages"
+          >
+            <span>💬</span>
+            Messages
           </button>
 
-          <button class="nav-item" data-page="contacts">
-            <span>♟</span> Contacts
+          <button
+            type="button"
+            class="nav-item"
+            data-page="contacts"
+          >
+            <span>👥</span>
+            Contacts
           </button>
 
-          <button class="nav-item" data-page="profile">
-            <span>●</span> My Profile
+          <button
+            type="button"
+            class="nav-item"
+            data-page="profile"
+          >
+            <span>👤</span>
+            Profile
           </button>
 
-          <button class="nav-item" data-page="settings">
-            <span>⚙</span> Settings
+          <button
+            type="button"
+            class="nav-item"
+            data-page="settings"
+          >
+            <span>⚙️</span>
+            Settings
           </button>
 
-        </div>
+        </nav>
 
         <div class="sidebar-bottom">
-
-          <p class="security-note">
-            🛡 Your conversations matter.
-          </p>
-
           <button type="button" id="logoutBtn" class="logout-btn">
-            ⇥ Logout
+            <span>↪</span> Logout
           </button>
-
         </div>
 
       </aside>
 
 
-      <!-- MIDDLE PANEL -->
+      <!-- CONVERSATION SIDEBAR -->
+      <aside class="conversation-sidebar">
 
-      <section class="conversation-sidebar">
+        <div class="conversation-top">
 
-        <div class="panel-header">
-          <div>
+          <div class="conversation-title">
             <h2 id="listTitle">Messages</h2>
-            <p>Stay connected</p>
+
+            <button
+              type="button"
+              id="newChatBtn"
+              class="new-chat-btn"
+              title="New Chat"
+            >
+              +
+            </button>
           </div>
 
-          <button
-            type="button"
-            id="newChatBtn"
-            class="icon-btn"
-            title="New Chat"
-          >✎</button>
+          <form id="searchForm" class="search-form">
+            <span>🔍</span>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search username or DigiChat ID..."
+              autocomplete="off"
+            >
+          </form>
+
         </div>
-
-        <!-- Search -->
-
-        <form id="searchForm" class="search-box">
-
-          <span>⌕</span>
-
-          <input
-            type="search"
-            id="searchInput"
-            placeholder="Search people or DigiChat ID"
-            autocomplete="off"
-          >
-
-        </form>
 
         <div id="searchResults" class="search-results" hidden></div>
 
-        <!-- Message Filters -->
-
-        <div class="conversation-tabs">
-          <button type="button" class="filter-tab active"
-                  data-filter="all">All Messages</button>
-
-          <button type="button" class="filter-tab"
-                  data-filter="unread">Unread</button>
-        </div>
-
-        <!-- Conversation List -->
-
         <div id="conversationsList" class="conversations-list">
-
           <div class="empty-state">
-            <div class="empty-icon">☏</div>
-            <h3>No conversations yet</h3>
-            <p>Find people and start your first conversation.</p>
+            <p>Your conversations will appear here.</p>
           </div>
-
         </div>
 
-      </section>
+      </aside>
 
 
-      <!-- RIGHT CHAT PANEL -->
-
+      <!-- CHAT AREA -->
       <main class="chat-area">
 
-        <!-- Default Welcome Screen -->
+        <!-- WELCOME SCREEN -->
+        <div id="chatWelcome" class="chat-welcome">
 
-        <section id="chatWelcome" class="chat-welcome">
+          <div class="welcome-icon">💬</div>
 
-          <div class="welcome-icon">☏</div>
-
-          <h1>Welcome to DigiChat</h1>
+          <h2>Welcome to DigiChat</h2>
 
           <p>
-            Your space to connect, communicate and build
-            meaningful conversations.
+            Select a conversation to start messaging.
           </p>
 
-          <div class="welcome-features">
-            <span>⚡ Fast Messaging</span>
-            <span>🔒 Secure Accounts</span>
-            <span>☻ Emoji Support</span>
-          </div>
-
-          <p class="welcome-hint">
-            Find someone to start chatting.
-          </p>
-
-        </section>
+        </div>
 
 
-        <!-- Active Chat -->
-
+        <!-- CHAT PANEL -->
         <section id="chatPanel" class="chat-panel" hidden>
 
           <header class="chat-header">
 
-            <div class="chat-user-info">
+            <!-- MOBILE BACK BUTTON -->
+            <button
+              type="button"
+              id="mobileBackBtn"
+              class="mobile-back-btn"
+              aria-label="Back to conversations"
+            >
+              ←
+            </button>
 
-              <div class="avatar" id="chatAvatar">U</div>
-
-              <div>
-                <h3 id="activeChatName">User Name</h3>
-                <p id="activeChatUsername">@username</p>
-              </div>
-
+            <div class="chat-avatar" id="chatAvatar">
+              D
             </div>
 
-            <div class="chat-actions">
-
-              <button type="button" id="chatSearchBtn"
-                      class="icon-btn" title="Search messages">
-                ⌕
-              </button>
-
-              <button type="button" id="chatMenuBtn"
-                      class="icon-btn" title="More options">
-                ⋮
-              </button>
-
+            <div class="chat-user-info">
+              <h3 id="activeChatName">User</h3>
+              <p id="activeChatUsername">@username</p>
             </div>
 
           </header>
 
-          <!-- Messages -->
 
-          <div id="messagesContainer" class="messages-container">
-
-            <div class="empty-state">
-              <p>Start your conversation!</p>
-            </div>
-
+          <!-- MESSAGES -->
+          <div
+            id="messagesContainer"
+            class="messages-container"
+          >
           </div>
 
-          <!-- Message Input -->
 
+          <!-- MESSAGE INPUT -->
           <form id="messageForm" class="message-form">
 
-            <button type="button" id="emojiBtn"
-                    class="icon-btn" title="Emoji">
-              ☻
+            <button
+              type="button"
+              id="emojiBtn"
+              class="emoji-btn"
+              title="Emoji"
+            >
+              😊
             </button>
 
             <input
               type="text"
               id="messageInput"
-              placeholder="Type your message..."
+              placeholder="Type a message..."
               autocomplete="off"
-              maxlength="5000"
               required
             >
 
-            <button type="submit" id="sendBtn"
-                    class="send-btn">
+            <button
+              type="submit"
+              id="sendBtn"
+              class="send-btn"
+            >
               ➤
             </button>
 
@@ -366,12 +299,9 @@
 
         </section>
 
-
-        <!-- Bottom Status -->
-
-        <footer class="chat-footer">
-          <span>●</span> Connected to DigiChat
-        </footer>
+        <div class="chat-footer">
+          <p>🔒 Your conversations on DigiChat</p>
+        </div>
 
       </main>
 
@@ -379,11 +309,9 @@
 
   </section>
 
-</div>
 
-<!-- Firebase Application Logic -->
-
-<script type="module" src="app.js"></script>
+  <!-- FIREBASE APPLICATION -->
+  <script type="module" src="app.js"></script>
 
 </body>
 </html>
