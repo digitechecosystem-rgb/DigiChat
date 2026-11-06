@@ -1325,3 +1325,91 @@ button {
 
 }
 
+/* =========================================
+   DIGICHAT - MOBILE FULL SCREEN CHAT
+========================================= */
+
+.mobile-back-btn {
+  display: none;
+}
+
+@media screen and (max-width: 700px) {
+
+  .mobile-back-btn {
+    display: none;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 27px;
+    cursor: pointer;
+    padding: 5px 12px 5px 0;
+    flex-shrink: 0;
+  }
+
+  .dashboard.mobile-chat-open {
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard.mobile-chat-open .sidebar,
+  .dashboard.mobile-chat-open .conversation-sidebar {
+    display: none !important;
+  }
+
+  .dashboard.mobile-chat-open .chat-area {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    flex: 1;
+    overflow: hidden !important;
+  }
+
+  .dashboard.mobile-chat-open .chat-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dashboard.mobile-chat-open .chat-panel[hidden] {
+    display: none !important;
+  }
+
+  .dashboard.mobile-chat-open .mobile-back-btn {
+    display: block !important;
+  }
+
+  .dashboard.mobile-chat-open .chat-header {
+    display: flex !important;
+    flex-shrink: 0;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .dashboard.mobile-chat-open .chat-user-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dashboard.mobile-chat-open .messages-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto !important;
+  }
+
+  .dashboard.mobile-chat-open .message-form {
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  .dashboard.mobile-chat-open .chat-footer {
+    display: none !important;
+  }
+}
+
