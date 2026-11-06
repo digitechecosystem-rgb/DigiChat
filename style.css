@@ -890,3 +890,70 @@ button {
     max-width: 85%;
   }
 }
+
+/* USER SEARCH RESULTS */
+
+.user-result-card,
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
+  margin-bottom: 9px;
+  background: #171f2d;
+  border: 1px solid #273244;
+  border-radius: 12px;
+}
+
+.user-result-info,
+.contact-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-result-info h3,
+.contact-info h3 {
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.user-result-info p,
+.contact-info p,
+.user-result-info small,
+.contact-info small {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.add-contact-btn,
+.remove-contact-btn {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: #6c63ff;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.add-contact-btn:disabled {
+  background: #263247;
+  color: #94a3b8;
+  cursor: default;
+}
+
+.remove-contact-btn {
+  background: #fb718520;
+  color: #fb7185;
+}
+
+.search-info {
+  padding: 15px 8px;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.6;
+}
