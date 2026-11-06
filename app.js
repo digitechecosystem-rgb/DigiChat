@@ -10,7 +10,18 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
-// Firebase Configuration
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  writeBatch,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+// ===================================
+// 1. FIREBASE CONFIGURATION
+// ===================================
+
 const firebaseConfig = {
   apiKey: "AIzaSyBmpAPdpt6XWZMgdIr-4ZHJmCQrHUgnPlg",
   authDomain: "digichat-eb330.firebaseapp.com",
@@ -23,9 +34,14 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// HTML Elements
+// ===================================
+// 2. HTML ELEMENTS
+// ===================================
+
 const authForm = document.getElementById("authForm");
+
 const loginTab = document.getElementById("loginTab");
 const registerTab = document.getElementById("registerTab");
 
@@ -47,17 +63,28 @@ const logoutBtn = document.getElementById("logoutBtn");
 const formTitle = document.getElementById("formTitle");
 const formSubtitle = document.getElementById("formSubtitle");
 
+const tabs = document.querySelector(".tabs");
+const authHeading = document.querySelector(".auth-heading");
+
 let currentMode = "login";
 
-// Display message
-function showMessage(text, type = "info") {
+// ===================================
+// 3. MESSAGE SYSTEM
+// ===================================
+
+function showMessage(text, type = "success") {
   message.textContent = text;
+
   message.style.color =
     type === "error" ? "#ff7777" : "#4be3a1";
 }
 
-// Switch Login / Register
+// ===================================
+// 4. SWITCH LOGIN / REGISTER
+// ===================================
+
 function setMode(mode) {
+
   currentMode = mode;
 
   const isRegister = mode === "register";
@@ -83,15 +110,97 @@ function setMode(mode) {
     ? "Create Account"
     : "Login";
 
-  message.textContent = "";
   authForm.reset();
+  message.textContent = "";
 }
 
 loginTab.addEventListener("click", () => setMode("login"));
+
 registerTab.addEventListener("click", () => setMode("register"));
 
-// Register / Login
+// ===================================
+// 5. CREATE FIRESTORE USER PROFILE
+// ===================================
+
+async function saveUserProfile(user, displayName) {
+
+  const uniqueId = "DGC-" + user.uid;
+
+  const publicRef = doc(db, "publicProfiles", user.uid);
+  const privateRef = doc(db, "privateUsers", user.uid);
+
+  const batch = writeBatch(db);
+
+  batch.set(publicRef, {
+    name: displayName,
+    uniqueId: uniqueId,
+    photoURL: user.photoURL || "",
+    status: "active",
+    createdAt: serverTimestamp()
+  });
+
+  batch.set(privateRef, {
+    email: user.email,
+    createdAt: serverTimestamp()
+  });
+
+  await batch.commit();
+
+  return uniqueId;
+}
+
+// ===================================
+// 6. RESTORE MISSING PROFILE
+// ===================================
+
+async function ensureUserProfile(user) {
+
+  const publicRef = doc(db, "publicProfiles", user.uid);
+  const privateRef = doc(db, "privateUsers", user.uid);
+
+  const [publicSnap, privateSnap] = await Promise.all([
+    getDoc(publicRef),
+    getDoc(privateRef)
+  ]);
+
+  if (publicSnap.exists() && privateSnap.exists()) {
+    return publicSnap.data();
+  }
+
+  const batch = writeBatch(db);
+
+  if (!publicSnap.exists()) {
+
+    batch.set(publicRef, {
+      name: user.displayName || user.email.split("@")[0],
+      uniqueId: "DGC-" + user.uid,
+      photoURL: user.photoURL || "",
+      status: "active",
+      createdAt: serverTimestamp()
+    });
+  }
+
+  if (!privateSnap.exists()) {
+
+    batch.set(privateRef, {
+      email: user.email,
+      createdAt: serverTimestamp()
+    });
+  }
+
+  await batch.commit();
+
+  const updatedProfile = await getDoc(publicRef);
+
+  return updatedProfile.data();
+}
+
+// ===================================
+// 7. REGISTRATION AND LOGIN
+// ===================================
+
 authForm.addEventListener("submit", async (event) => {
+
   event.preventDefault();
 
   const email = emailInput.value.trim();
@@ -102,30 +211,46 @@ authForm.addEventListener("submit", async (event) => {
   submitBtn.textContent = "Please wait...";
 
   try {
+
     if (currentMode === "register") {
 
       if (name.length < 2) {
         throw new Error("Please enter your full name.");
       }
 
+      if (password.length < 6) {
+        throw new Error("Password must contain at least 6 characters.");
+      }
+
       if (password !== confirmInput.value) {
         throw new Error("Passwords do not match.");
       }
 
+      // Create Firebase Authentication Account
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
 
+      // Save display name in Authentication
       await updateProfile(result.user, {
         displayName: name
       });
 
-      showMessage("Account created successfully!");
+      // Create Firestore Profile
+      const uniqueId = await saveUserProfile(
+        result.user,
+        name
+      );
+
+      showMessage(
+        "Account created successfully! Your ID: " + uniqueId
+      );
 
     } else {
 
+      // Login Existing User
       await signInWithEmailAndPassword(
         auth,
         email,
@@ -133,68 +258,118 @@ authForm.addEventListener("submit", async (event) => {
       );
 
       showMessage("Login successful!");
+
     }
 
   } catch (error) {
 
     const errors = {
-      "auth/email-already-in-use": "This email is already registered.",
-      "auth/invalid-email": "Please enter a valid email.",
-      "auth/weak-password": "Password must be at least 6 characters.",
-      "auth/invalid-credential": "Incorrect email or password.",
-      "auth/network-request-failed": "Check your internet connection.",
-      "auth/too-many-requests": "Too many attempts. Try again later."
+
+      "auth/email-already-in-use":
+        "This email is already registered.",
+
+      "auth/invalid-email":
+        "Please enter a valid email address.",
+
+      "auth/weak-password":
+        "Password must be at least 6 characters.",
+
+      "auth/invalid-credential":
+        "Incorrect email or password.",
+
+      "auth/network-request-failed":
+        "Check your internet connection.",
+
+      "auth/too-many-requests":
+        "Too many attempts. Try again later.",
+
+      "permission-denied":
+        "Database permission denied. Check Firestore Rules."
+
     };
 
-    showMessage(
-      errors[error.code] || error.message,
-      "error"
-    );
+    const errorMessage =
+      errors[error.code] || error.message;
+
+    showMessage(errorMessage, "error");
+
+    console.error("DigiChat Error:", error);
 
   } finally {
 
     submitBtn.disabled = false;
+
     submitBtn.textContent =
-      currentMode === "register" ? "Create Account" : "Login";
+      currentMode === "register"
+        ? "Create Account"
+        : "Login";
   }
+
 });
 
-// Check Login Status
-onAuthStateChanged(auth, (user) => {
+// ===================================
+// 8. AUTHENTICATION STATE
+// ===================================
+
+onAuthStateChanged(auth, async (user) => {
 
   if (user) {
 
     authForm.hidden = true;
-    document.querySelector(".tabs").hidden = true;
-    document.querySelector(".auth-heading").hidden = true;
-
+    tabs.hidden = true;
+    authHeading.hidden = true;
     userPanel.hidden = false;
-    userEmail.textContent = user.email;
 
-    showMessage("You are logged in!");
+    userEmail.textContent = "Loading profile...";
+
+    try {
+
+      const profile = await ensureUserProfile(user);
+
+      userEmail.textContent =
+        user.email +
+        "\nDigiChat ID: " +
+        profile.uniqueId;
+
+    } catch (error) {
+
+      userEmail.textContent =
+        "Profile loading failed. Please contact support.";
+
+      console.error("Profile Error:", error);
+    }
 
   } else {
 
     authForm.hidden = false;
-    document.querySelector(".tabs").hidden = false;
-    document.querySelector(".auth-heading").hidden = false;
-
+    tabs.hidden = false;
+    authHeading.hidden = false;
     userPanel.hidden = true;
+
   }
+
 });
 
-// Logout
+// ===================================
+// 9. LOGOUT
+// ===================================
+
 logoutBtn.addEventListener("click", async () => {
 
   try {
+
     await signOut(auth);
+
     setMode("login");
+
     showMessage("Logged out successfully!");
 
   } catch (error) {
+
     showMessage(error.message, "error");
+
   }
 
 });
 
-console.log("DigiChat Firebase Initialized!");
+console.log("DigiChat Authentication & Firestore Ready!");
