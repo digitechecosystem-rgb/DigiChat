@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 
 import {
@@ -96,6 +95,8 @@ const newChatBtn = $("newChatBtn");
 
 const chatWelcome = $("chatWelcome");
 const chatPanel = $("chatPanel");
+const mobileBackBtn = $("mobileBackBtn");
+const dashboard = document.querySelector(".dashboard");
 const chatAvatar = $("chatAvatar");
 const activeChatName = $("activeChatName");
 const activeChatUsername = $("activeChatUsername");
@@ -728,7 +729,6 @@ newChatBtn.addEventListener("click", () => {
   searchInput.focus();
   searchInput.placeholder = "Enter @username or DigiChat ID";
 });
-
 // ==========================================
 // 14. CONTACTS LIST
 // ==========================================
@@ -848,6 +848,7 @@ async function openChat(user) {
 
     chatWelcome.hidden = true;
     chatPanel.hidden = false;
+    dashboard?.classList.add("mobile-chat-open");
 
     activeChatName.textContent = user.name || "DigiChat User";
     activeChatUsername.textContent = user.username
@@ -877,6 +878,24 @@ async function openChat(user) {
     alert("Could not open chat: " + error.message);
   }
 }
+
+// ==========================================
+// MOBILE CHAT BACK BUTTON
+// ==========================================
+
+mobileBackBtn?.addEventListener("click", () => {
+  dashboard?.classList.remove("mobile-chat-open");
+
+  currentChat = null;
+
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+
+  chatPanel.hidden = true;
+  chatWelcome.hidden = false;
+});
 
 // ==========================================
 // 16. REAL-TIME MESSAGE LISTENER
@@ -1009,7 +1028,6 @@ emojiBtn.addEventListener("click", () => {
   const cursor = start + emoji.length;
   messageInput.setSelectionRange(cursor, cursor);
 });
-
 // ==========================================
 // 19. REAL-TIME CHAT LIST
 // ==========================================
