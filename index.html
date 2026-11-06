@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#075e54">
+<title>DigiChat - By DigiTech</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Arial,sans-serif;
+  background:#e9edef;
+  color:#222;
+  height:100vh;
+}
+.app{
+  max-width:1200px;
+  height:100vh;
+  margin:auto;
+  display:flex;
+  background:white;
+  overflow:hidden;
+}
+.sidebar{
+  width:340px;
+  border-right:1px solid #ddd;
+  display:flex;
+  flex-direction:column;
+}
+.brand{
+  background:#075e54;
+  color:white;
+  padding:20px;
+}
+.brand h2{font-size:25px}
+.brand small{opacity:.8}
+.top{
+  padding:12px;
+  background:#f5f6f6;
+}
+select,input,button{font:inherit}
+select{
+  padding:10px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  background:white;
+}
+.search{
+  width:100%;
+  padding:12px;
+  border:0;
+  border-radius:8px;
+  margin-top:10px;
+  outline:none;
+}
+.section{
+  padding:15px;
+  color:#078477;
+  font-weight:bold;
+}
+.contact{
+  padding:17px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+.contact:hover{background:#f5f6f6}
+.avatar{
+  width:45px;height:45px;
+  border-radius:50%;
+  background:#d8eee9;
+  display:grid;
+  place-items:center;
+  font-weight:bold;
+  color:#075e54;
+  flex-shrink:0;
+}
+.contact small{color:#777}
+.chat{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.chat-header{
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  border-bottom:1px solid #eee;
+  background:#f5f6f6;
+}
+.chat-header h3{font-size:16px}
+.online{font-size:12px;color:#078477}
+.messages{
+  flex:1;
+  padding:20px;
+  overflow-y:auto;
+  background-color:#efeae2;
+  background-image:radial-gradient(#ddd6ca 0.6px,transparent 0.6px);
+  background-size:15px 15px;
+}
+.bubble{
+  width:fit-content;
+  max-width:80%;
+  padding:11px 14px;
+  margin-bottom:12px;
+  border-radius:12px;
+  background:white;
+  box-shadow:0 1px 2px #ccc;
+  overflow-wrap:anywhere;
+}
+.bubble.me{
+  margin-left:auto;
+  background:#d9fdd3;
+}
+.time{
+  display:block;
+  text-align:right;
+  font-size:10px;
+  color:#777;
+  margin-top:5px;
+}
+.composer{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  background:#f5f6f6;
+}
+.composer input{
+  flex:1;
+  min-width:0;
+  padding:13px;
+  border:0;
+  border-radius:25px;
+  outline:none;
+}
+.send{
+  background:#075e54;
+  color:white;
+  border:0;
+  border-radius:50%;
+  width:46px;height:46px;
+  cursor:pointer;
+}
+.welcome{
+  margin:auto;
+  text-align:center;
+  color:#666;
+  padding:25px;
+}
+@media(max-width:650px){
+  .sidebar{width:110px}
+  .brand{padding:12px 5px;text-align:center}
+  .brand h2{font-size:17px}
+  .brand small{font-size:9px}
+  .top{padding:6px}
+  .top select{width:100%;font-size:11px}
+  .search{font-size:10px;padding:8px}
+  .section{font-size:11px;padding:10px 5px;text-align:center}
+  .contact{padding:12px 5px;justify-content:center}
+  .contact .details{display:none}
+  .chat-header{padding:12px 8px}
+  .chat-header h3{font-size:14px}
+  .messages{padding:12px}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <h2>💬 DigiChat</h2>
+      <small>By DigiTech</small>
+    </div>
+
+    <div class="top">
+      <select id="language" onchange="changeLanguage()">
+        <option value="en">🇬🇧 English</option>
+        <option value="mr">🇮🇳 मराठी</option>
+        <option value="hi">🇮🇳 हिन्दी</option>
+      </select>
+      <input class="search" id="search"
+        placeholder="Search chats..." oninput="searchChats()">
+    </div>
+
+    <div class="section" id="chatTitle">MY CHATS</div>
+
+    <div class="contact" onclick="openChat()">
+      <div class="avatar">F</div>
+      <div class="details">
+        <b>My Friend</b><br>
+        <small id="lastMessage">Start a conversation</small>
+      </div>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <header class="chat-header">
+      <div class="avatar">F</div>
+      <div>
+        <h3>My Friend</h3>
+        <div class="online" id="status">Demo chat</div>
+      </div>
+    </header>
+
+    <section class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <h2>Welcome to DigiChat 👋</h2>
+        <p>Your private messaging space.</p>
+        <p>Select your language and start chatting.</p>
+      </div>
+    </section>
+
+    <form class="composer" id="chatForm">
+      <input id="messageInput"
+        placeholder="Type a message..." autocomplete="off">
+      <button class="send" type="submit">➤</button>
+    </form>
+  </main>
+
+</div>
+
+<script>
+const translations = {
+  en:{
+    chats:"MY CHATS",
+    search:"Search chats...",
+    start:"Start a conversation",
+    welcome:"Welcome to DigiChat 👋",
+    intro:"Your private messaging space.",
+    select:"Select your language and start chatting.",
+    input:"Type a message...",
+    status:"Demo chat"
+  },
+  mr:{
+    chats:"MAJHE CHATS",
+    search:"Chat shodha...",
+    start:"Bolne suru kara",
+    welcome:"DigiChat madhye swagat aahe 👋",
+    intro:"Tumchi private messaging space.",
+    select:"Tumchi bhasha nivda ani chat suru kara.",
+    input:"Message type kara...",
+    status:"Demo chat"
+  },
+  hi:{
+    chats:"मेरी चैट",
+    search:"चैट खोजें...",
+    start:"बातचीत शुरू करें",
+    welcome:"DigiChat में आपका स्वागत है 👋",
+    intro:"आपकी निजी मैसेजिंग जगह।",
+    select:"भाषा चुनें और चैट शुरू करें।",
+    input:"संदेश लिखें...",
+    status:"डेमो चैट"
+  }
+};
+
+const messages = document.getElementById("messages");
+const input = document.getElementById("messageInput");
+const form = document.getElementById("chatForm");
+
+function changeLanguage(){
+  const lang = document.getElementById("language").value;
+  const t = translations[lang];
+
+  document.getElementById("chatTitle").textContent=t.chats;
+  document.getElementById("search").placeholder=t.search;
+  document.getElementById("lastMessage").textContent=t.start;
+  document.getElementById("status").textContent=t.status;
+  input.placeholder=t.input;
+
+  document.getElementById("welcome").innerHTML =
+    `<h2>${t.welcome}</h2>
+     <p>${t.intro}</p>
+     <p>${t.select}</p>`;
+
+  localStorage.setItem("digichat-language",lang);
+}
+
+function openChat(){
+  document.getElementById("welcome").style.display="none";
+  input.focus();
+}
+
+form.addEventListener("submit",function(e){
+  e.preventDefault();
+
+  const text=input.value.trim();
+  if(!text)return;
+
+  openChat();
+
+  const bubble=document.createElement("div");
+  bubble.className="bubble me";
+  bubble.textContent=text;
+
+  const time=document.createElement("span");
+  time.className="time";
+  time.textContent=new Date().toLocaleTimeString([],{
+    hour:"2-digit",minute:"2-digit"
+  });
+
+  bubble.appendChild(time);
+  messages.appendChild(bubble);
+  messages.scrollTop=messages.scrollHeight;
+
+  document.getElementById("lastMessage").textContent=text;
+  input.value="";
+});
+
+function searchChats(){
+  const value=document.getElementById("search").value.toLowerCase();
+  document.querySelector(".contact").style.display =
+    "my friend".includes(value) ? "flex":"none";
+}
+
+const savedLanguage=localStorage.getItem("digichat-language");
+if(savedLanguage){
+  document.getElementById("language").value=savedLanguage;
+}
+changeLanguage();
+</script>
+</body>
+</html>
