@@ -2,717 +2,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DigiChat - By DigiTech</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10111b">
 
-<style>
-*{box-sizing:border-box}
-body{
- margin:0;background:#f5f6fa;color:#262626;
- font-family:Arial,"Noto Sans Devanagari",sans-serif;
-}
-header{
- height:65px;background:#fff;border-bottom:1px solid #ddd;
- display:flex;align-items:center;justify-content:space-between;
- padding:0 7%;
-}
-.logo{font-size:25px;font-weight:bold;color:#2563eb}
-select{
- padding:9px 12px;border:1px solid #ddd;
- border-radius:8px;background:white;
-}
-.hidden{display:none!important}
+  <title>DigiChat - Connect Instantly</title>
+  <meta name="description" content="DigiChat - A simple and secure messaging platform.">
 
-/* Login and Signup */
-.authPage{
- min-height:calc(100vh - 65px);
- display:flex;align-items:center;justify-content:center;
- padding:25px 15px;
-}
-.loginCard{
- width:100%;max-width:390px;background:white;
- border:1px solid #ddd;border-radius:12px;
- padding:35px 32px;text-align:center;
- box-shadow:0 8px 30px #0000000b;
-}
-.brandIcon{font-size:48px;margin-bottom:8px}
-.loginCard h1{font-size:27px;margin:5px 0 10px;color:#2563eb}
-.subtitle{font-size:14px;color:#777;margin-bottom:28px}
-.field{text-align:left;margin-bottom:15px}
-.field label{font-size:13px;font-weight:bold;display:block;margin-bottom:7px}
-input{
- width:100%;padding:13px 12px;
- border:1px solid #ddd;border-radius:7px;
- background:#fafafa;font-size:14px;outline:none;
-}
-input:focus{border-color:#2563eb;background:white}
-button{cursor:pointer}
-.primaryBtn{
- width:100%;padding:12px;border:0;border-radius:7px;
- background:#2563eb;color:white;font-weight:bold;
- font-size:15px;margin-top:8px;
-}
-.primaryBtn:hover{background:#1d4ed8}
-.switchText{font-size:14px;margin-top:23px;color:#777}
-.linkBtn{
- border:0;background:none;color:#2563eb;
- font-weight:bold;font-size:14px;
-}
-.footer{color:#999;font-size:12px;margin-top:30px}
-#status{font-size:13px;color:#dc2626;margin-top:12px;overflow-wrap:anywhere}
-
-/* Chat dashboard */
-.dashboard{max-width:1100px;margin:25px auto;padding:15px}
-.profile,.sidebar,.chatPanel{
- background:white;border:1px solid #e5e7eb;
- border-radius:13px;padding:18px;
-}
-.profile{margin-bottom:15px}
-#chatLayout{
- display:grid;grid-template-columns:300px 1fr;gap:15px;
-}
-#chatList{max-height:420px;overflow:auto}
-.chatItem{
- padding:14px;border-bottom:1px solid #eee;
- cursor:pointer;overflow-wrap:anywhere;
-}
-.chatItem:hover{background:#eff6ff}
-#messages{
- height:420px;overflow-y:auto;padding:12px;
- background:#f8fafc;border-radius:10px;
-}
-.msg{
- max-width:80%;padding:11px 14px;margin:9px 0;
- background:#e0e7ff;border-radius:14px;
- overflow-wrap:anywhere;
-}
-.mine{background:#dbeafe;margin-left:auto}
-.small{font-size:12px;color:#777;overflow-wrap:anywhere}
-.chatInput{display:flex;gap:8px;margin-top:12px}
-.chatInput input{flex:1;min-width:0}
-.chatInput button{
- padding:10px 18px;border:0;border-radius:8px;
- background:#2563eb;color:white;
-}
-.secondary{
- background:#475569;color:white;border:0;
- padding:9px 13px;border-radius:7px;margin:5px 4px 0 0;
-}
-#chatStatus{overflow-wrap:anywhere;color:#b45309;font-size:13px}
-.empty{text-align:center;color:#888;padding:20px}
-
-@media(max-width:700px){
- header{padding:0 15px}
- #chatLayout{grid-template-columns:1fr}
- #messages{height:350px}
- .loginCard{padding:30px 22px}
- .dashboard{padding:10px}
-}
-</style>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header>
- <div class="logo">💬 DigiChat</div>
- <select id="language" aria-label="Language">
-  <option value="en">English</option>
-  <option value="mr">मराठी</option>
-  <option value="hi">हिन्दी</option>
- </select>
-</header>
+  <div class="app-container">
 
-<!-- LOGIN / SIGNUP -->
-<main id="authPage" class="authPage">
- <section class="loginCard">
-  <div class="brandIcon">💬</div>
-  <h1>DigiChat</h1>
-  <p class="subtitle" id="subtitle"></p>
+    <header class="brand">
+      <div class="brand-icon">D</div>
+      <h1>Digi<span>Chat</span></h1>
+      <p>Connect. Chat. Communicate.</p>
+    </header>
 
-  <div class="field">
-   <label id="emailLabel"></label>
-   <input id="email" type="email" autocomplete="email">
+    <main class="auth-card">
+
+      <div class="auth-heading">
+        <h2 id="formTitle">Welcome Back!</h2>
+        <p id="formSubtitle">Login to continue to DigiChat</p>
+      </div>
+
+      <div class="tabs">
+        <button id="loginTab" class="tab active">Login</button>
+        <button id="registerTab" class="tab">Register</button>
+      </div>
+
+      <form id="authForm">
+
+        <div class="form-group" id="nameGroup" hidden>
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="Enter your email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter password" minlength="6" required>
+        </div>
+
+        <div class="form-group" id="confirmGroup" hidden>
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" placeholder="Confirm password">
+        </div>
+
+        <button type="submit" id="submitBtn" class="primary-btn">
+          Login
+        </button>
+
+      </form>
+
+      <p id="message" class="message" aria-live="polite"></p>
+
+      <div id="userPanel" hidden>
+        <div class="success-icon">✓</div>
+        <h3>You're Connected!</h3>
+        <p id="userEmail"></p>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
+
+      <div class="auth-footer">
+        <p>By continuing, you agree to use DigiChat responsibly.</p>
+      </div>
+
+    </main>
+
+    <footer>
+      <p>© 2026 DigiTech Ecosystem | DigiChat</p>
+      <p>Made for better connections ❤️</p>
+    </footer>
+
   </div>
 
-  <div class="field">
-   <label id="passwordLabel"></label>
-   <input id="password" type="password" autocomplete="current-password">
-  </div>
+  <script type="module" src="app.js"></script>
 
-  <button class="primaryBtn" id="authButton"></button>
-  <p id="status"></p>
-
-  <div class="switchText">
-   <span id="switchQuestion"></span>
-   <button class="linkBtn" id="toggleAuth"></button>
-  </div>
-
-  <div class="footer">By DigiTech | Private Messaging</div>
- </section>
-</main>
-
-<!-- CHAT DASHBOARD -->
-<main id="mainPage" class="dashboard hidden">
-
- <section class="profile">
-  <h3 id="accountTitle"></h3>
-  <p id="userEmail"></p>
-  <p class="small" id="uidText"></p>
-  <button class="secondary" id="copyUID"></button>
-  <button class="secondary" id="logout"></button>
- </section>
-
- <div id="chatLayout">
-
-  <section class="sidebar">
-   <h3 id="chatsTitle"></h3>
-   <label id="friendLabel"></label>
-   <input id="friendUID">
-   <button class="primaryBtn" id="createChat"></button>
-   <p id="chatStatus"></p>
-   <hr>
-   <div id="chatList"></div>
-  </section>
-
-  <section class="chatPanel">
-   <h3 id="chatHeader"></h3>
-   <div id="messages">
-    <p class="empty" id="messageWelcome"></p>
-   </div>
-   <div class="chatInput">
-    <input id="messageInput">
-    <button id="sendButton"></button>
-   </div>
-  </section>
-
- </div>
-</main>
-
-<script type="module">
-
-// FIREBASE IMPORTS
-import {initializeApp} from
-"https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-
-import {
- getAuth,
- createUserWithEmailAndPassword,
- signInWithEmailAndPassword,
- signOut,
- onAuthStateChanged
-} from
-"https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-
-import {
- getFirestore,
- collection,
- addDoc,
- query,
- where,
- getDocs,
- onSnapshot,
- orderBy,
- serverTimestamp
-} from
-"https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
-
-// YOUR FIREBASE CONFIGURATION
-const firebaseConfig={
- apiKey:"AIzaSyD0OMTU2s1kRQ_ljFIJPK4JvZlYSUZA5jI",
- authDomain:"digichat-e5c5a.firebaseapp.com",
- projectId:"digichat-e5c5a",
- storageBucket:"digichat-e5c5a.firebasestorage.app",
- messagingSenderId:"291258843320",
- appId:"1:291258843320:web:8f026f787ecdc0573d344d"
-};
-
-// INITIALIZE FIREBASE
-const app=initializeApp(firebaseConfig);
-const auth=getAuth(app);
-const db=getFirestore(app);
-
-// APP VARIABLES
-let currentUser=null;
-let isSignup=false;
-let activeChat=null;
-let activeFriendUID=null;
-let stopChats=null;
-let stopMessages=null;
-
-let lang=localStorage.getItem("digichat-language")||"en";
-
-// LANGUAGE TRANSLATIONS
-const translations={
-
- en:{
-  subtitle:"Connect privately with your friend.",
-  email:"Email address",
-  password:"Password",
-  emailPH:"Enter your email",
-  passwordPH:"Enter your password",
-  login:"Log In",
-  signup:"Sign Up",
-  questionLogin:"Don't have an account?",
-  questionSignup:"Already have an account?",
-  account:"Your Account",
-  copy:"Copy My UID",
-  logout:"Log Out",
-  chats:"My Messages",
-  friend:"Friend's Firebase UID",
-  friendPH:"Paste your friend's UID",
-  start:"Start Chat",
-  select:"Select a conversation",
-  welcome:"Your messages will appear here.",
-  type:"Write a message...",
-  send:"Send",
-  empty:"No conversations yet.",
-  created:"Chat opened successfully!",
-  self:"You cannot chat with yourself.",
-  invalid:"Enter a valid friend's UID.",
-  copied:"UID copied!",
-  error:"Error: ",
-  you:"You",
-  friendName:"Friend",
-  sending:"Sending..."
- },
-
- mr:{
-  subtitle:"आपल्या मित्राशी खाजगी गप्पा मारा.",
-  email:"ईमेल पत्ता",
-  password:"पासवर्ड",
-  emailPH:"तुमचा ईमेल टाका",
-  passwordPH:"तुमचा पासवर्ड टाका",
-  login:"लॉगिन करा",
-  signup:"नोंदणी करा",
-  questionLogin:"तुमचे खाते नाही का?",
-  questionSignup:"आधीच खाते आहे का?",
-  account:"तुमचे खाते",
-  copy:"माझा UID कॉपी करा",
-  logout:"बाहेर पडा",
-  chats:"माझे संदेश",
-  friend:"मित्राचा Firebase UID",
-  friendPH:"मित्राचा UID टाका",
-  start:"गप्पा सुरू करा",
-  select:"संभाषण निवडा",
-  welcome:"तुमचे संदेश येथे दिसतील.",
-  type:"संदेश लिहा...",
-  send:"पाठवा",
-  empty:"अजून कोणतेही संभाषण नाही.",
-  created:"चॅट यशस्वीपणे सुरू झाले!",
-  self:"तुम्ही स्वतःशी चॅट करू शकत नाही.",
-  invalid:"मित्राचा योग्य UID टाका.",
-  copied:"UID कॉपी झाला!",
-  error:"त्रुटी: ",
-  you:"तुम्ही",
-  friendName:"मित्र",
-  sending:"पाठवत आहे..."
- },
-
- hi:{
-  subtitle:"अपने दोस्त से निजी बातचीत करें.",
-  email:"ईमेल पता",
-  password:"पासवर्ड",
-  emailPH:"अपना ईमेल डालें",
-  passwordPH:"अपना पासवर्ड डालें",
-  login:"लॉगिन करें",
-  signup:"खाता बनाएँ",
-  questionLogin:"खाता नहीं है?",
-  questionSignup:"पहले से खाता है?",
-  account:"आपका खाता",
-  copy:"मेरा UID कॉपी करें",
-  logout:"लॉग आउट",
-  chats:"मेरे संदेश",
-  friend:"दोस्त का Firebase UID",
-  friendPH:"दोस्त का UID डालें",
-  start:"चैट शुरू करें",
-  select:"बातचीत चुनें",
-  welcome:"आपके संदेश यहाँ दिखाई देंगे.",
-  type:"संदेश लिखें...",
-  send:"भेजें",
-  empty:"अभी कोई बातचीत नहीं है.",
-  created:"चैट शुरू हो गया!",
-  self:"आप खुद से चैट नहीं कर सकते.",
-  invalid:"सही UID डालें.",
-  copied:"UID कॉपी हो गया!",
-  error:"त्रुटि: ",
-  you:"आप",
-  friendName:"दोस्त",
-  sending:"भेज रहे हैं..."
- }
-
-};
-
-function tr(key){
- return translations[lang][key] || translations.en[key] || key;
-}
-
-// UPDATE ALL LANGUAGE TEXT
-function updateLanguage(){
-
- const set=(id,key)=>{
-  document.getElementById(id).textContent=tr(key);
- };
-
- set("subtitle","subtitle");
- set("emailLabel","email");
- set("passwordLabel","password");
- set("accountTitle","account");
- set("copyUID","copy");
- set("logout","logout");
- set("chatsTitle","chats");
- set("friendLabel","friend");
- set("createChat","start");
- set("sendButton","send");
- set("messageWelcome","welcome");
-
- document.getElementById("email").placeholder=tr("emailPH");
- document.getElementById("password").placeholder=tr("passwordPH");
- document.getElementById("friendUID").placeholder=tr("friendPH");
- document.getElementById("messageInput").placeholder=tr("type");
-
- document.getElementById("authButton").textContent=
-  isSignup?tr("signup"):tr("login");
-
- document.getElementById("switchQuestion").textContent=
-  isSignup?tr("questionSignup"):tr("questionLogin");
-
- document.getElementById("toggleAuth").textContent=
-  isSignup?tr("login"):tr("signup");
-
- if(!activeChat){
-  document.getElementById("chatHeader").textContent=tr("select");
- }
-}
-
-// LANGUAGE SELECT
-const languageSelect=document.getElementById("language");
-languageSelect.value=lang;
-updateLanguage();
-
-languageSelect.addEventListener("change",e=>{
- lang=e.target.value;
- localStorage.setItem("digichat-language",lang);
- updateLanguage();
-});
-
-// LOGIN / SIGNUP SWITCH
-document.getElementById("toggleAuth").onclick=()=>{
- isSignup=!isSignup;
- document.getElementById("status").textContent="";
- updateLanguage();
-};
-
-// AUTHENTICATION
-document.getElementById("authButton").onclick=async()=>{
-
- const email=document.getElementById("email").value.trim();
- const password=document.getElementById("password").value;
- const status=document.getElementById("status");
-
- if(!email || !password){
-  status.textContent=tr("email")+" / "+tr("password")+" required";
-  return;
- }
-
- if(password.length<6){
-  status.textContent="Password must be at least 6 characters.";
-  return;
- }
-
- const button=document.getElementById("authButton");
- button.disabled=true;
-
- try{
-
-  if(isSignup){
-   await createUserWithEmailAndPassword(auth,email,password);
-  }else{
-   await signInWithEmailAndPassword(auth,email,password);
-  }
-
-  status.textContent="";
-
- }catch(error){
-  status.textContent=tr("error")+error.message;
- }finally{
-  button.disabled=false;
- }
-};
-
-// USER LOGIN STATUS
-onAuthStateChanged(auth,user=>{
-
- currentUser=user;
-
- document.getElementById("authPage")
-  .classList.toggle("hidden",!!user);
-
- document.getElementById("mainPage")
-  .classList.toggle("hidden",!user);
-
- if(user){
-
-  document.getElementById("userEmail").textContent=user.email;
-  document.getElementById("uidText").textContent="UID: "+user.uid;
-
-  loadChats();
-
- }else{
-
-  if(stopChats)stopChats();
-  if(stopMessages)stopMessages();
-
-  stopChats=null;
-  stopMessages=null;
-  activeChat=null;
-  activeFriendUID=null;
-
-  document.getElementById("chatList").replaceChildren();
-  document.getElementById("messages").replaceChildren();
-
-  const p=document.createElement("p");
-  p.className="empty";
-  p.textContent=tr("welcome");
-  document.getElementById("messages").append(p);
-
- }
-});
-
-// COPY UID
-document.getElementById("copyUID").onclick=async()=>{
-
- try{
-  await navigator.clipboard.writeText(currentUser.uid);
-  document.getElementById("chatStatus").textContent=tr("copied");
- }catch(error){
-  document.getElementById("chatStatus").textContent=currentUser.uid;
- }
-
-};
-
-// LOGOUT
-document.getElementById("logout").onclick=async()=>{
- try{
-  await signOut(auth);
- }catch(error){
-  document.getElementById("chatStatus").textContent=tr("error")+error.message;
- }
-};
-
-// LOAD CHATS
-function loadChats(){
-
- if(stopChats)stopChats();
-
- const q=query(
-  collection(db,"chats"),
-  where("members","array-contains",currentUser.uid)
- );
-
- stopChats=onSnapshot(q,snapshot=>{
-
-  const list=document.getElementById("chatList");
-  list.replaceChildren();
-
-  if(snapshot.empty){
-   const p=document.createElement("p");
-   p.className="empty";
-   p.textContent=tr("empty");
-   list.append(p);
-   return;
-  }
-
-  snapshot.forEach(chatDoc=>{
-
-   const data=chatDoc.data();
-   const other=data.members.find(id=>id!==currentUser.uid);
-
-   const item=document.createElement("div");
-   item.className="chatItem";
-
-   item.textContent=tr("friendName")+": "+(other||"");
-
-   item.onclick=()=>openChat(chatDoc.id,other);
-
-   list.append(item);
-
-  });
-
- },error=>{
-  document.getElementById("chatStatus").textContent=tr("error")+error.message;
- });
-
-}
-
-// CREATE OR OPEN EXISTING CHAT
-document.getElementById("createChat").onclick=async()=>{
-
- if(!currentUser)return;
-
- const friendUID=document.getElementById("friendUID").value.trim();
- const status=document.getElementById("chatStatus");
-
- if(!friendUID){
-  status.textContent=tr("invalid");
-  return;
- }
-
- if(friendUID===currentUser.uid){
-  status.textContent=tr("self");
-  return;
- }
-
- const button=document.getElementById("createChat");
- button.disabled=true;
-
- try{
-
-  // Check existing conversations first
-  const q=query(
-   collection(db,"chats"),
-   where("members","array-contains",currentUser.uid)
-  );
-
-  const existing=await getDocs(q);
-  let existingChat=null;
-
-  existing.forEach(doc=>{
-   const members=doc.data().members||[];
-   if(members.length===2 && members.includes(friendUID)){
-    existingChat=doc;
-   }
-  });
-
-  if(existingChat){
-   openChat(existingChat.id,friendUID);
-   status.textContent="";
-  }else{
-
-   const ref=await addDoc(collection(db,"chats"),{
-    members:[currentUser.uid,friendUID],
-    createdAt:serverTimestamp()
-   });
-
-   status.textContent=tr("created");
-   openChat(ref.id,friendUID);
-  }
-
-  document.getElementById("friendUID").value="";
-
- }catch(error){
-  status.textContent=tr("error")+error.message;
- }finally{
-  button.disabled=false;
- }
-
-};
-
-// OPEN CHAT
-function openChat(chatId,friendUID){
-
- activeChat=chatId;
- activeFriendUID=friendUID;
-
- if(stopMessages)stopMessages();
-
- document.getElementById("chatHeader").textContent=
-  tr("friendName")+": "+(friendUID||"");
-
- const area=document.getElementById("messages");
- area.replaceChildren();
-
- const q=query(
-  collection(db,"chats",chatId,"messages"),
-  orderBy("createdAt","asc")
- );
-
- stopMessages=onSnapshot(q,snapshot=>{
-
-  area.replaceChildren();
-
-  snapshot.forEach(doc=>{
-
-   const data=doc.data();
-
-   const bubble=document.createElement("div");
-   bubble.className="msg";
-
-   if(data.senderId===currentUser.uid){
-    bubble.classList.add("mine");
-   }
-
-   const content=document.createElement("div");
-   content.textContent=data.text||"";
-   bubble.append(content);
-
-   const label=document.createElement("div");
-   label.className="small";
-   label.textContent=
-    data.senderId===currentUser.uid?tr("you"):tr("friendName");
-
-   bubble.append(label);
-   area.append(bubble);
-
-  });
-
-  area.scrollTop=area.scrollHeight;
-
- },error=>{
-  document.getElementById("chatStatus").textContent=tr("error")+error.message;
- });
-
-}
-
-// SEND MESSAGE
-async function sendMessage(){
-
- if(!currentUser || !activeChat)return;
-
- const input=document.getElementById("messageInput");
- const text=input.value.trim();
-
- if(!text)return;
-
- if(text.length>4000){
-  document.getElementById("chatStatus").textContent="Message is too long.";
-  return;
- }
-
- const button=document.getElementById("sendButton");
- button.disabled=true;
-
- try{
-
-  await addDoc(
-   collection(db,"chats",activeChat,"messages"),
-   {
-    text:text,
-    senderId:currentUser.uid,
-    createdAt:serverTimestamp()
-   }
-  );
-
-  input.value="";
-  document.getElementById("chatStatus").textContent="";
-
- }catch(error){
-
-  document.getElementById("chatStatus").textContent=
-   tr("error")+error.message;
-
- }finally{
-  button.disabled=false;
- }
-
-}
-
-document.getElementById("sendButton").onclick=sendMessage;
-
-document.getElementById("messageInput").addEventListener("keydown",e=>{
- if(e.key==="Enter")sendMessage();
-});
-
-</script>
 </body>
 </html>
