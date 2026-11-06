@@ -624,10 +624,10 @@ function renderSearchResult(profile, alreadyAdded) {
       addButton.textContent = "Adding...";
 
       try {
-        await addContact(profile);
+       await addContact(profile);
 
-        addButton.textContent = "Added";
-        await loadContacts();
+addButton.textContent = "Added";
+addButton.disabled = true;
 
       } catch (error) {
         console.error("Add contact error:", error);
