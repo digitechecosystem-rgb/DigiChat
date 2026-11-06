@@ -24,12 +24,14 @@ import {
   limit,
   runTransaction,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-// =============================================
-// 1. FIREBASE CONFIGURATION
-// =============================================
+// ==========================================
+// 1. FIREBASE
+// ==========================================
 
 const firebaseConfig = {
   apiKey: "AIzaSyBmpAPdpt6XWZMgdIr-4ZHJmCQrHUgnPlg",
@@ -44,66 +46,85 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// =============================================
+// ==========================================
 // 2. HTML ELEMENTS
-// =============================================
+// ==========================================
 
-const authView = document.getElementById("authView");
-const appView = document.getElementById("appView");
-const authForm = document.getElementById("authForm");
+const $ = (id) => document.getElementById(id);
 
-const loginTab = document.getElementById("loginTab");
-const registerTab = document.getElementById("registerTab");
+const authView = $("authView");
+const appView = $("appView");
+const authForm = $("authForm");
 
-const nameGroup = document.getElementById("nameGroup");
-const usernameGroup = document.getElementById("usernameGroup");
-const confirmGroup = document.getElementById("confirmGroup");
+const loginTab = $("loginTab");
+const registerTab = $("registerTab");
 
-const nameInput = document.getElementById("name");
-const usernameInput = document.getElementById("username");
-const usernameStatus = document.getElementById("usernameStatus");
+const nameGroup = $("nameGroup");
+const usernameGroup = $("usernameGroup");
+const confirmGroup = $("confirmGroup");
 
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-const confirmInput = document.getElementById("confirmPassword");
+const nameInput = $("name");
+const usernameInput = $("username");
+const usernameStatus = $("usernameStatus");
 
-const submitBtn = document.getElementById("submitBtn");
-const message = document.getElementById("message");
+const emailInput = $("email");
+const passwordInput = $("password");
+const confirmInput = $("confirmPassword");
 
-const formTitle = document.getElementById("formTitle");
-const formSubtitle = document.getElementById("formSubtitle");
+const submitBtn = $("submitBtn");
+const message = $("message");
 
-const logoutBtn = document.getElementById("logoutBtn");
+const formTitle = $("formTitle");
+const formSubtitle = $("formSubtitle");
 
-const sidebarAvatar = document.getElementById("sidebarAvatar");
-const sidebarName = document.getElementById("sidebarName");
-const sidebarEmail = document.getElementById("sidebarEmail");
-const sidebarUsername = document.getElementById("sidebarUsername");
-const sidebarDigiId = document.getElementById("sidebarDigiId");
+const logoutBtn = $("logoutBtn");
 
-const listTitle = document.getElementById("listTitle");
+const sidebarAvatar = $("sidebarAvatar");
+const sidebarName = $("sidebarName");
+const sidebarEmail = $("sidebarEmail");
+const sidebarUsername = $("sidebarUsername");
+const sidebarDigiId = $("sidebarDigiId");
 
+const listTitle = $("listTitle");
 const navButtons = document.querySelectorAll(".nav-item");
 
-const searchForm = document.getElementById("searchForm");
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
-const conversationsList = document.getElementById("conversationsList");
+const searchForm = $("searchForm");
+const searchInput = $("searchInput");
+const searchResults = $("searchResults");
+const conversationsList = $("conversationsList");
+const newChatBtn = $("newChatBtn");
 
-const newChatBtn = document.getElementById("newChatBtn");
+const chatWelcome = $("chatWelcome");
+const chatPanel = $("chatPanel");
+const chatAvatar = $("chatAvatar");
+const activeChatName = $("activeChatName");
+const activeChatUsername = $("activeChatUsername");
+const messagesContainer = $("messagesContainer");
+const messageForm = $("messageForm");
+const messageInput = $("messageInput");
+const sendBtn = $("sendBtn");
+const emojiBtn = $("emojiBtn");
 
-// =============================================
-// 3. APPLICATION STATE
-// =============================================
+// ==========================================
+// 3. APP STATE
+// ==========================================
 
 let currentMode = "login";
-let usernameTimer = null;
-let isCreatingAccount = false;
 let currentUserProfile = null;
+let currentChat = null;
+let isCreatingAccount = false;
 
-// =============================================
-// 4. COMMON HELPERS
-// =============================================
+let usernameTimer = null;
+let searchTimer = null;
+
+let unsubscribeMessages = null;
+let unsubscribeChats = null;
+
+let chatCache = [];
+
+// ==========================================
+// 4. HELPERS
+// ==========================================
 
 function showMessage(text, type = "success") {
   if (!message) return;
@@ -121,11 +142,7 @@ function validUsername(value) {
   return /^[a-z0-9](?:[a-z0-9._]{1,18}[a-z0-9])$/.test(value);
 }
 
-function usernameRef(username) {
-  return doc(db, "usernames", username);
-}
-
-function createElement(tag, className, text) {
+function createElement(tag, className = "", text = "") {
   const element = document.createElement(tag);
 
   if (className) element.className = className;
@@ -134,9 +151,44 @@ function createElement(tag, className, text) {
   return element;
 }
 
-// =============================================
-// 5. USERNAME AVAILABILITY
-// =============================================
+function usernameRef(username) {
+  return doc(db, "usernames", username);
+}
+
+function getChatId(uid1, uid2) {
+  return [uid1, uid2].sort().join("_");
+}
+
+function formatTime(timestamp) {
+  if (!timestamp?.toDate) return "";
+
+  return timestamp.toDate().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function showListMessage(text) {
+  conversationsList.replaceChildren(
+    createElement("p", "search-info", text)
+  );
+}
+
+function stopChatListeners() {
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+
+  if (unsubscribeChats) {
+    unsubscribeChats();
+    unsubscribeChats = null;
+  }
+}
+
+// ==========================================
+// 5. USERNAME CHECK
+// ==========================================
 
 async function checkUsernameAvailability() {
   const username = normalizeUsername(usernameInput.value);
@@ -149,8 +201,7 @@ async function checkUsernameAvailability() {
 
   if (!validUsername(username)) {
     usernameStatus.textContent =
-      "Use letters, numbers, dots and underscores. Start and end with a letter or number.";
-
+      "Use letters, numbers, dots or underscores. Start and end with a letter or number.";
     usernameStatus.style.color = "#ff7777";
     return false;
   }
@@ -159,13 +210,13 @@ async function checkUsernameAvailability() {
   usernameStatus.style.color = "#94a3b8";
 
   try {
-    const snapshot = await getDoc(usernameRef(username));
+    const snap = await getDoc(usernameRef(username));
 
     if (normalizeUsername(usernameInput.value) !== username) {
       return false;
     }
 
-    if (snapshot.exists()) {
+    if (snap.exists()) {
       usernameStatus.textContent = "Username already taken.";
       usernameStatus.style.color = "#ff7777";
       return false;
@@ -177,10 +228,7 @@ async function checkUsernameAvailability() {
 
   } catch (error) {
     console.error(error);
-
-    usernameStatus.textContent =
-      "Could not check username. Check Firestore Rules.";
-
+    usernameStatus.textContent = "Could not check username. Check Firestore Rules.";
     usernameStatus.style.color = "#ff7777";
     return false;
   }
@@ -199,13 +247,12 @@ usernameInput?.addEventListener("input", () => {
   usernameTimer = setTimeout(checkUsernameAvailability, 500);
 });
 
-// =============================================
-// 6. LOGIN / REGISTER SWITCH
-// =============================================
+// ==========================================
+// 6. LOGIN / REGISTER TABS
+// ==========================================
 
 function setMode(mode) {
   currentMode = mode;
-
   const isRegister = mode === "register";
 
   nameGroup.hidden = !isRegister;
@@ -241,9 +288,9 @@ function setMode(mode) {
 loginTab.addEventListener("click", () => setMode("login"));
 registerTab.addEventListener("click", () => setMode("register"));
 
-// =============================================
-// 7. SAVE NEW USER PROFILE
-// =============================================
+// ==========================================
+// 7. CREATE USER PROFILE
+// ==========================================
 
 async function saveUserProfile(user, name, username) {
   const publicRef = doc(db, "publicProfiles", user.uid);
@@ -280,9 +327,9 @@ async function saveUserProfile(user, name, username) {
   });
 }
 
-// =============================================
-// 8. RESTORE EXISTING USER PROFILE
-// =============================================
+// ==========================================
+// 8. EXISTING USER PROFILE
+// ==========================================
 
 async function ensureUserProfile(user) {
   const publicRef = doc(db, "publicProfiles", user.uid);
@@ -292,10 +339,6 @@ async function ensureUserProfile(user) {
     getDoc(publicRef),
     getDoc(privateRef)
   ]);
-
-  if (publicSnap.exists() && privateSnap.exists()) {
-    return publicSnap.data();
-  }
 
   const batch = writeBatch(db);
 
@@ -316,15 +359,17 @@ async function ensureUserProfile(user) {
     });
   }
 
-  await batch.commit();
+  if (!publicSnap.exists() || !privateSnap.exists()) {
+    await batch.commit();
+  }
 
   const updated = await getDoc(publicRef);
   return updated.data();
 }
 
-// =============================================
-// 9. DISPLAY PROFILE
-// =============================================
+// ==========================================
+// 9. SHOW PROFILE
+// ==========================================
 
 function displayUserProfile(user, profile) {
   currentUserProfile = profile;
@@ -342,9 +387,7 @@ function displayUserProfile(user, profile) {
     profile.uniqueId || "DGC-" + user.uid;
 
   if (profile.photoURL) {
-    sidebarAvatar.style.backgroundImage =
-      `url("${profile.photoURL}")`;
-
+    sidebarAvatar.style.backgroundImage = `url("${profile.photoURL}")`;
     sidebarAvatar.style.backgroundSize = "cover";
     sidebarAvatar.style.backgroundPosition = "center";
     sidebarAvatar.textContent = "";
@@ -361,15 +404,16 @@ async function showDashboard(user) {
   try {
     const profile = await ensureUserProfile(user);
     displayUserProfile(user, profile);
-    console.log("DigiChat Dashboard Loaded");
+    startChatsListener();
   } catch (error) {
     console.error("Profile loading error:", error);
+    alert("Could not load your profile: " + error.message);
   }
 }
 
-// =============================================
-// 10. REGISTRATION AND LOGIN
-// =============================================
+// ==========================================
+// 10. REGISTER / LOGIN
+// ==========================================
 
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -415,12 +459,8 @@ authForm.addEventListener("submit", async (event) => {
       );
 
       try {
-        await updateProfile(result.user, {
-          displayName: name
-        });
-
+        await updateProfile(result.user, { displayName: name });
         await saveUserProfile(result.user, name, username);
-
         isCreatingAccount = false;
         await showDashboard(result.user);
 
@@ -429,8 +469,8 @@ authForm.addEventListener("submit", async (event) => {
 
         try {
           await deleteUser(result.user);
-        } catch (deleteError) {
-          console.error("Account cleanup error:", deleteError);
+        } catch (cleanupError) {
+          console.error(cleanupError);
         }
 
         throw error;
@@ -444,7 +484,7 @@ authForm.addEventListener("submit", async (event) => {
     isCreatingAccount = false;
 
     const errors = {
-      "USERNAME_TAKEN": "Username already taken. Try another.",
+      USERNAME_TAKEN: "Username already taken. Try another.",
       "auth/email-already-in-use": "Email already registered.",
       "auth/invalid-email": "Enter a valid email address.",
       "auth/weak-password": "Password must be at least 6 characters.",
@@ -456,20 +496,18 @@ authForm.addEventListener("submit", async (event) => {
     };
 
     showMessage(errors[error.code] || errors[error.message] || error.message, "error");
-
-    console.error("Authentication error:", error);
+    console.error(error);
 
   } finally {
     submitBtn.disabled = false;
-
     submitBtn.textContent =
       currentMode === "register" ? "Create Account" : "Login";
   }
 });
 
-// =============================================
-// 11. AUTHENTICATION STATE
-// =============================================
+// ==========================================
+// 11. AUTH STATE
+// ==========================================
 
 onAuthStateChanged(auth, async (user) => {
   if (isCreatingAccount) return;
@@ -477,6 +515,8 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     await showDashboard(user);
   } else {
+    stopChatListeners();
+    currentChat = null;
     currentUserProfile = null;
     appView.hidden = true;
     authView.hidden = false;
@@ -484,103 +524,104 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// =============================================
+// ==========================================
 // 12. LOGOUT
-// =============================================
+// ==========================================
 
 logoutBtn.addEventListener("click", async () => {
   try {
+    stopChatListeners();
     await signOut(auth);
   } catch (error) {
-    console.error("Logout error:", error);
+    console.error(error);
     alert("Logout failed: " + error.message);
   }
 });
 
-// =============================================
-// 13. SEARCH USERS
-// =============================================
+// ==========================================
+// 13. USER SEARCH
+// ==========================================
 
 function showSearchMessage(text) {
-  searchResults.replaceChildren();
-
-  const p = createElement("p", "search-info", text);
-  searchResults.appendChild(p);
-
+  searchResults.replaceChildren(
+    createElement("p", "search-info", text)
+  );
   searchResults.hidden = false;
 }
 
-async function findUser(searchValue) {
-  const term = searchValue.trim();
+async function findUser(value) {
+  const term = value.trim();
 
   if (!term) return null;
 
-  // Search by username
-  if (term.startsWith("@") || !term.toUpperCase().startsWith("DGC-")) {
-    const username = normalizeUsername(term);
+  if (term.toUpperCase().startsWith("DGC-")) {
+    const idQuery = query(
+      collection(db, "publicProfiles"),
+      where("uniqueId", "==", term),
+      limit(1)
+    );
 
-    if (!validUsername(username)) return null;
+    const result = await getDocs(idQuery);
 
-    const usernameSnap = await getDoc(usernameRef(username));
+    if (result.empty) return null;
 
-    if (!usernameSnap.exists()) return null;
+    const profileDoc = result.docs[0];
 
-    const uid = usernameSnap.data().uid;
-
-    if (uid === auth.currentUser.uid) {
+    if (profileDoc.id === auth.currentUser.uid) {
       return { ownAccount: true };
     }
 
-    const profileSnap = await getDoc(
-      doc(db, "publicProfiles", uid)
-    );
-
-    if (!profileSnap.exists()) return null;
-
-    return {
-      uid,
-      ...profileSnap.data()
-    };
+    return { uid: profileDoc.id, ...profileDoc.data() };
   }
 
-  // Search by DigiChat ID
-  const idQuery = query(
-    collection(db, "publicProfiles"),
-    where("uniqueId", "==", term),
-    limit(1)
-  );
+  const username = normalizeUsername(term);
 
-  const result = await getDocs(idQuery);
+  if (!validUsername(username)) return null;
 
-  if (result.empty) return null;
+  const usernameSnap = await getDoc(usernameRef(username));
 
-  const profileDoc = result.docs[0];
+  if (!usernameSnap.exists()) return null;
 
-  if (profileDoc.id === auth.currentUser.uid) {
+  const uid = usernameSnap.data().uid;
+
+  if (uid === auth.currentUser.uid) {
     return { ownAccount: true };
   }
 
-  return {
-    uid: profileDoc.id,
-    ...profileDoc.data()
-  };
+  const profileSnap = await getDoc(doc(db, "publicProfiles", uid));
+
+  if (!profileSnap.exists()) return null;
+
+  return { uid, ...profileSnap.data() };
 }
 
-// =============================================
-// 14. RENDER SEARCH RESULT
-// =============================================
-
 async function isAlreadyContact(uid) {
-  const contactRef = doc(
-    db,
-    "contacts",
-    auth.currentUser.uid,
-    "items",
-    uid
-  );
-
-  const snap = await getDoc(contactRef);
+  const ref = doc(db, "contacts", auth.currentUser.uid, "items", uid);
+  const snap = await getDoc(ref);
   return snap.exists();
+}
+
+async function addContact(profile) {
+  const currentUid = auth.currentUser.uid;
+
+  if (profile.uid === currentUid) {
+    throw new Error("You cannot add yourself.");
+  }
+
+  const contactRef = doc(db, "contacts", currentUid, "items", profile.uid);
+  const existing = await getDoc(contactRef);
+
+  if (existing.exists()) {
+    throw new Error("Already in your contacts.");
+  }
+
+  await setDoc(contactRef, {
+    uid: profile.uid,
+    name: profile.name || "DigiChat User",
+    username: profile.username || "",
+    uniqueId: profile.uniqueId || "",
+    addedAt: serverTimestamp()
+  });
 }
 
 function renderSearchResult(profile, alreadyAdded) {
@@ -595,19 +636,12 @@ function renderSearchResult(profile, alreadyAdded) {
   );
 
   const info = createElement("div", "user-result-info");
-  const name = createElement("h3", "", profile.name || "DigiChat User");
-  const username = createElement(
-    "p",
-    "",
-    profile.username ? "@" + profile.username : "Username unavailable"
-  );
-  const digiId = createElement(
-    "small",
-    "",
-    profile.uniqueId || ""
-  );
 
-  info.append(name, username, digiId);
+  info.append(
+    createElement("h3", "", profile.name || "DigiChat User"),
+    createElement("p", "", profile.username ? "@" + profile.username : ""),
+    createElement("small", "", profile.uniqueId || "")
+  );
 
   const addButton = createElement(
     "button",
@@ -618,53 +652,43 @@ function renderSearchResult(profile, alreadyAdded) {
   addButton.type = "button";
   addButton.disabled = alreadyAdded;
 
-  if (!alreadyAdded) {
-    addButton.addEventListener("click", async () => {
-      addButton.disabled = true;
-      addButton.textContent = "Adding...";
+  addButton.addEventListener("click", async () => {
+    if (alreadyAdded) return;
 
-      try {
-       await addContact(profile);
+    addButton.disabled = true;
+    addButton.textContent = "Adding...";
 
-addButton.textContent = "Added";
-addButton.disabled = true;
-
-      } catch (error) {
-        console.error("Add contact error:", error);
-        addButton.disabled = false;
-        addButton.textContent = "Add Contact";
-        alert("Could not add contact: " + error.message);
-      }
-    });
-  }
+    try {
+      await addContact(profile);
+      addButton.textContent = "Added";
+    } catch (error) {
+      console.error(error);
+      addButton.disabled = false;
+      addButton.textContent = "Add Contact";
+      alert(error.message);
+    }
+  });
 
   card.append(avatar, info, addButton);
   searchResults.appendChild(card);
   searchResults.hidden = false;
 }
 
-// =============================================
-// 15. SEARCH ACTION
-// =============================================
-
 async function performUserSearch() {
   const term = searchInput.value.trim();
 
-  if (!term) {
+  if (!term || !auth.currentUser) {
     searchResults.hidden = true;
-    searchResults.replaceChildren();
     return;
   }
 
-  if (!auth.currentUser) return;
-
-  showSearchMessage("Searching DigiChat users...");
+  showSearchMessage("Searching...");
 
   try {
     const profile = await findUser(term);
 
     if (!profile) {
-      showSearchMessage("No user found. Check the username or DigiChat ID.");
+      showSearchMessage("No user found. Check username or DigiChat ID.");
       return;
     }
 
@@ -673,16 +697,12 @@ async function performUserSearch() {
       return;
     }
 
-    const alreadyAdded = await isAlreadyContact(profile.uid);
-
-    renderSearchResult(profile, alreadyAdded);
+    const added = await isAlreadyContact(profile.uid);
+    renderSearchResult(profile, added);
 
   } catch (error) {
-    console.error("Search error:", error);
-
-    showSearchMessage(
-      "Search failed. Please check your internet connection and Firestore Rules."
-    );
+    console.error(error);
+    showSearchMessage("Search failed. Check Firestore Rules.");
   }
 }
 
@@ -691,15 +711,11 @@ searchForm.addEventListener("submit", (event) => {
   performUserSearch();
 });
 
-let searchTimer;
-
 searchInput.addEventListener("input", () => {
   clearTimeout(searchTimer);
 
   searchTimer = setTimeout(() => {
-    const term = searchInput.value.trim();
-
-    if (term.length >= 3) {
+    if (searchInput.value.trim().length >= 3) {
       performUserSearch();
     } else {
       searchResults.hidden = true;
@@ -713,66 +729,18 @@ newChatBtn.addEventListener("click", () => {
   searchInput.placeholder = "Enter @username or DigiChat ID";
 });
 
-// =============================================
-// 16. ADD CONTACT
-// =============================================
-
-async function addContact(profile) {
-  const currentUid = auth.currentUser.uid;
-
-  if (profile.uid === currentUid) {
-    throw new Error("You cannot add yourself.");
-  }
-
-  const contactRef = doc(
-    db,
-    "contacts",
-    currentUid,
-    "items",
-    profile.uid
-  );
-
-  const existing = await getDoc(contactRef);
-
-  if (existing.exists()) {
-    throw new Error("This user is already in your contacts.");
-  }
-
-  await setDoc(contactRef, {
-    uid: profile.uid,
-    name: profile.name || "DigiChat User",
-    username: profile.username || "",
-    uniqueId: profile.uniqueId || "",
-    addedAt: serverTimestamp()
-  });
-}
-
-// =============================================
-// 17. LOAD CONTACTS
-// =============================================
+// ==========================================
+// 14. CONTACTS LIST
+// ==========================================
 
 async function loadContacts() {
   if (!auth.currentUser) return;
 
-  conversationsList.replaceChildren();
-
-  const loading = createElement(
-    "p",
-    "search-info",
-    "Loading contacts..."
-  );
-
-  conversationsList.appendChild(loading);
+  showListMessage("Loading contacts...");
 
   try {
-    const contactsRef = collection(
-      db,
-      "contacts",
-      auth.currentUser.uid,
-      "items"
-    );
-
-    const snapshot = await getDocs(contactsRef);
+    const ref = collection(db, "contacts", auth.currentUser.uid, "items");
+    const snapshot = await getDocs(ref);
 
     conversationsList.replaceChildren();
 
@@ -782,11 +750,7 @@ async function loadContacts() {
       empty.append(
         createElement("div", "empty-icon", "♟"),
         createElement("h3", "", "No contacts yet"),
-        createElement(
-          "p",
-          "",
-          "Search for people using their username or DigiChat ID."
-        )
+        createElement("p", "", "Search for people to add contacts.")
       );
 
       conversationsList.appendChild(empty);
@@ -795,7 +759,6 @@ async function loadContacts() {
 
     snapshot.forEach((contactDoc) => {
       const contact = contactDoc.data();
-
       const card = createElement("div", "contact-card");
 
       const avatar = createElement(
@@ -808,75 +771,368 @@ async function loadContacts() {
 
       info.append(
         createElement("h3", "", contact.name || "DigiChat User"),
-        createElement(
-          "p",
-          "",
-          contact.username ? "@" + contact.username : "No username"
-        ),
+        createElement("p", "", contact.username ? "@" + contact.username : ""),
         createElement("small", "", contact.uniqueId || "")
       );
 
-      const removeButton = createElement(
-        "button",
-        "remove-contact-btn",
-        "Remove"
-      );
+      const openButton = createElement("button", "open-chat-btn", "Message");
+      openButton.type = "button";
 
+      openButton.addEventListener("click", () => {
+        openChat({
+          uid: contact.uid,
+          name: contact.name,
+          username: contact.username,
+          uniqueId: contact.uniqueId
+        });
+      });
+
+      const removeButton = createElement("button", "remove-contact-btn", "Remove");
       removeButton.type = "button";
 
       removeButton.addEventListener("click", async () => {
-        const confirmed = confirm(
-          "Remove " + (contact.name || "this user") + " from contacts?"
-        );
-
-        if (!confirmed) return;
+        if (!confirm("Remove this contact?")) return;
 
         try {
           await deleteDoc(
-            doc(
-              db,
-              "contacts",
-              auth.currentUser.uid,
-              "items",
-              contactDoc.id
-            )
+            doc(db, "contacts", auth.currentUser.uid, "items", contactDoc.id)
           );
-
           await loadContacts();
-
         } catch (error) {
-          console.error("Remove contact error:", error);
           alert("Could not remove contact: " + error.message);
         }
       });
 
-      card.append(avatar, info, removeButton);
+      card.append(avatar, info, openButton, removeButton);
       conversationsList.appendChild(card);
     });
 
   } catch (error) {
-    console.error("Load contacts error:", error);
-
-    conversationsList.replaceChildren(
-      createElement(
-        "p",
-        "search-info",
-        "Could not load contacts. Check Firestore Rules."
-      )
-    );
+    console.error(error);
+    showListMessage("Could not load contacts. Check Firestore Rules.");
   }
 }
 
-// =============================================
-// 18. SIDEBAR NAVIGATION
-// =============================================
+// ==========================================
+// 15. OPEN OR CREATE CHAT
+// ==========================================
+
+async function openChat(user) {
+  if (!auth.currentUser) return;
+
+  if (user.uid === auth.currentUser.uid) {
+    alert("You cannot chat with yourself.");
+    return;
+  }
+
+  try {
+    const chatId = getChatId(auth.currentUser.uid, user.uid);
+    const chatRef = doc(db, "chats", chatId);
+
+    const chatSnap = await getDoc(chatRef);
+
+    if (!chatSnap.exists()) {
+      await setDoc(chatRef, {
+        members: [auth.currentUser.uid, user.uid].sort(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastMessage: "",
+        lastSenderId: ""
+      });
+    }
+
+    currentChat = {
+      id: chatId,
+      otherUser: user
+    };
+
+    chatWelcome.hidden = true;
+    chatPanel.hidden = false;
+
+    activeChatName.textContent = user.name || "DigiChat User";
+    activeChatUsername.textContent = user.username
+      ? "@" + user.username
+      : "";
+
+    chatAvatar.textContent = (user.name || "U").charAt(0).toUpperCase();
+
+    if (user.photoURL) {
+      chatAvatar.style.backgroundImage = `url("${user.photoURL}")`;
+      chatAvatar.style.backgroundSize = "cover";
+      chatAvatar.style.backgroundPosition = "center";
+      chatAvatar.textContent = "";
+    } else {
+      chatAvatar.style.backgroundImage = "none";
+    }
+
+    messagesContainer.replaceChildren(
+      createElement("p", "search-info", "Loading messages...")
+    );
+
+    listenToMessages(chatId);
+    messageInput.focus();
+
+  } catch (error) {
+    console.error("Open chat error:", error);
+    alert("Could not open chat: " + error.message);
+  }
+}
+
+// ==========================================
+// 16. REAL-TIME MESSAGE LISTENER
+// ==========================================
+
+function listenToMessages(chatId) {
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+  }
+
+  const messagesRef = collection(db, "chats", chatId, "messages");
+  const messagesQuery = query(
+    messagesRef,
+    orderBy("createdAt", "asc"),
+    limit(100)
+  );
+
+  unsubscribeMessages = onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+      messagesContainer.replaceChildren();
+
+      if (snapshot.empty) {
+        messagesContainer.appendChild(
+          createElement("div", "empty-state", "Start your conversation!")
+        );
+        return;
+      }
+
+      snapshot.forEach((messageDoc) => {
+        const data = messageDoc.data();
+        const mine = data.senderId === auth.currentUser.uid;
+
+        const bubble = createElement(
+          "div",
+          mine ? "message-bubble sent" : "message-bubble received"
+        );
+
+        const text = createElement("p", "message-text", data.text || "");
+        const time = createElement(
+          "small",
+          "message-time",
+          formatTime(data.createdAt)
+        );
+
+        bubble.append(text, time);
+        messagesContainer.appendChild(bubble);
+      });
+
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+    (error) => {
+      console.error("Message listener error:", error);
+      messagesContainer.replaceChildren(
+        createElement("p", "search-info", "Could not load messages.")
+      );
+    }
+  );
+}
+
+// ==========================================
+// 17. SEND MESSAGE
+// ==========================================
+
+messageForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const text = messageInput.value.trim();
+
+  if (!text || !currentChat || !auth.currentUser) return;
+
+  if (text.length > 5000) {
+    alert("Message is too long.");
+    return;
+  }
+
+  sendBtn.disabled = true;
+
+  try {
+    const chatRef = doc(db, "chats", currentChat.id);
+    const messageRef = doc(
+      collection(db, "chats", currentChat.id, "messages")
+    );
+
+    const batch = writeBatch(db);
+
+    batch.set(messageRef, {
+      text,
+      senderId: auth.currentUser.uid,
+      createdAt: serverTimestamp()
+    });
+
+    batch.update(chatRef, {
+      lastMessage: text,
+      lastSenderId: auth.currentUser.uid,
+      updatedAt: serverTimestamp()
+    });
+
+    await batch.commit();
+
+    messageInput.value = "";
+    messageInput.focus();
+
+  } catch (error) {
+    console.error("Send message error:", error);
+    alert("Message could not be sent: " + error.message);
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+
+// ==========================================
+// 18. EMOJI BUTTON
+// ==========================================
+
+emojiBtn.addEventListener("click", () => {
+  const emojis = ["😀", "😂", "❤️", "😍", "👍", "🙏", "🔥", "🎉", "😊", "😎"];
+
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+  const start = messageInput.selectionStart;
+  const end = messageInput.selectionEnd;
+  const value = messageInput.value;
+
+  messageInput.value =
+    value.slice(0, start) + emoji + value.slice(end);
+
+  messageInput.focus();
+
+  const cursor = start + emoji.length;
+  messageInput.setSelectionRange(cursor, cursor);
+});
+
+// ==========================================
+// 19. REAL-TIME CHAT LIST
+// ==========================================
+
+function startChatsListener() {
+  if (!auth.currentUser) return;
+
+  if (unsubscribeChats) unsubscribeChats();
+
+  const chatsQuery = query(
+    collection(db, "chats"),
+    where("members", "array-contains", auth.currentUser.uid)
+  );
+
+  unsubscribeChats = onSnapshot(
+    chatsQuery,
+    async (snapshot) => {
+      const chats = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data()
+      }));
+
+      chats.sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis?.() || 0;
+        const timeB = b.updatedAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      });
+
+      chatCache = chats;
+
+      const activePage = document.querySelector(".nav-item.active")?.dataset.page;
+
+      if (activePage === "messages") {
+        await renderChatList(chats);
+      }
+    },
+    (error) => {
+      console.error("Chat list listener error:", error);
+      showListMessage("Could not load chats. Check Firestore Rules.");
+    }
+  );
+}
+
+async function renderChatList(chats) {
+  conversationsList.replaceChildren();
+
+  if (!chats.length) {
+    const empty = createElement("div", "empty-state");
+
+    empty.append(
+      createElement("div", "empty-icon", "☏"),
+      createElement("h3", "", "No conversations yet"),
+      createElement("p", "", "Open a contact and send your first message.")
+    );
+
+    conversationsList.appendChild(empty);
+    return;
+  }
+
+  for (const chat of chats) {
+    const otherUid = chat.members.find(
+      (uid) => uid !== auth.currentUser.uid
+    );
+
+    if (!otherUid) continue;
+
+    try {
+      const profileSnap = await getDoc(
+        doc(db, "publicProfiles", otherUid)
+      );
+
+      if (!profileSnap.exists()) continue;
+
+      const profile = {
+        uid: otherUid,
+        ...profileSnap.data()
+      };
+
+      const card = createElement("button", "conversation-card");
+      card.type = "button";
+
+      const avatar = createElement(
+        "div",
+        "avatar",
+        (profile.name || "U").charAt(0).toUpperCase()
+      );
+
+      const info = createElement("div", "conversation-info");
+
+      info.append(
+        createElement("h3", "", profile.name || "DigiChat User"),
+        createElement(
+          "p",
+          "",
+          chat.lastMessage || "Start a conversation"
+        )
+      );
+
+      const time = createElement(
+        "small",
+        "conversation-time",
+        formatTime(chat.updatedAt)
+      );
+
+      card.append(avatar, info, time);
+
+      card.addEventListener("click", () => openChat(profile));
+
+      conversationsList.appendChild(card);
+
+    } catch (error) {
+      console.error("Chat profile load error:", error);
+    }
+  }
+}
+
+// ==========================================
+// 20. SIDEBAR NAVIGATION
+// ==========================================
 
 navButtons.forEach((button) => {
   button.addEventListener("click", async () => {
-    navButtons.forEach((item) => {
-      item.classList.remove("active");
-    });
-
+    navButtons.forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
 
     const page = button.dataset.page;
@@ -889,75 +1145,52 @@ navButtons.forEach((button) => {
     };
 
     listTitle.textContent = titles[page] || "DigiChat";
-
-    if (page === "contacts") {
-      searchResults.hidden = true;
-      await loadContacts();
-    }
+    searchResults.hidden = true;
 
     if (page === "messages") {
-      conversationsList.replaceChildren();
+      await renderChatList(chatCache);
+    }
 
-      const empty = createElement("div", "empty-state");
-
-      empty.append(
-        createElement("div", "empty-icon", "☏"),
-        createElement("h3", "", "No conversations yet"),
-        createElement(
-          "p",
-          "",
-          "Find people and start your first conversation."
-        )
-      );
-
-      conversationsList.appendChild(empty);
+    if (page === "contacts") {
+      await loadContacts();
     }
 
     if (page === "profile") {
       conversationsList.replaceChildren();
 
-      const info = createElement("div", "empty-state");
+      const profile = currentUserProfile || {};
 
-      info.append(
-        createElement("h3", "", currentUserProfile?.name || "My Profile"),
-        createElement(
-          "p",
-          "",
-          currentUserProfile?.username
-            ? "@" + currentUserProfile.username
-            : "Username not set"
-        ),
-        createElement(
-          "p",
-          "",
-          currentUserProfile?.uniqueId || ""
-        )
+      const box = createElement("div", "empty-state");
+
+      box.append(
+        createElement("h3", "", profile.name || "My Profile"),
+        createElement("p", "", profile.username ? "@" + profile.username : "Username not set"),
+        createElement("p", "", profile.uniqueId || "")
       );
 
-      conversationsList.appendChild(info);
+      conversationsList.appendChild(box);
     }
 
     if (page === "settings") {
       conversationsList.replaceChildren();
 
-      const info = createElement("div", "empty-state");
+      const box = createElement("div", "empty-state");
 
-      info.append(
+      box.append(
         createElement("h3", "", "Settings"),
-        createElement(
-          "p",
-          "",
-          "More account settings will be available soon."
-        )
+        createElement("p", "", "More settings will be available soon.")
       );
 
-      conversationsList.appendChild(info);
+      conversationsList.appendChild(box);
     }
   });
 });
 
-// =============================================
-// 19. INITIAL APPLICATION STATE
-// =============================================
+// ==========================================
+// 21. INITIAL STATE
+// ==========================================
 
-console.log("DigiChat User Search & Contacts Ready!");
+chatWelcome.hidden = false;
+chatPanel.hidden = true;
+
+console.log("DigiChat Real-Time Messaging Loaded");
