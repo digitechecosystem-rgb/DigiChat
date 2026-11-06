@@ -1205,3 +1205,123 @@ button {
     flex-wrap: wrap;
   }
 }
+
+/* =====================================
+   DIGICHAT - MOBILE NAVIGATION FIX
+===================================== */
+
+@media screen and (max-width: 700px) {
+
+  #appView {
+    display: block;
+    width: 100%;
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  .dashboard {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  /* LEFT SIDEBAR */
+  #appView .sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 10px !important;
+    overflow: visible !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-brand,
+  .account-card,
+  .menu-heading,
+  .security-note {
+    display: none !important;
+  }
+
+  /* MOBILE MENU */
+  #appView .sidebar-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 4px !important;
+  }
+
+  #appView .nav-item {
+    display: flex !important;
+    flex: 1 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 10px 2px !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+  }
+
+  #appView .nav-item span {
+    display: block !important;
+    margin: 0 0 5px 0 !important;
+    font-size: 18px !important;
+  }
+
+  .sidebar-bottom {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-top: 8px !important;
+  }
+
+  .logout-btn {
+    width: auto !important;
+    padding: 7px 14px !important;
+  }
+
+  /* MIDDLE PANEL */
+  #appView .conversation-sidebar {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 35vh !important;
+    overflow-y: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* CHAT PANEL */
+  #appView .chat-area {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 60vh !important;
+    min-height: 400px !important;
+    overflow: hidden !important;
+  }
+
+  .chat-panel {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .messages-container {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .message-form {
+    flex-shrink: 0;
+  }
+
+}
+
