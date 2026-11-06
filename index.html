@@ -4,541 +4,420 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#075e54">
-
-<title>DigiChat - By DigiTech</title>
+<title>DigiChat | By DigiTech</title>
 
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,sans-serif;
+  background:#eef2f7;color:#172033;
 }
-
-body {
-  font-family: Arial, "Noto Sans Devanagari", sans-serif;
-  background: #e9edef;
-  color: #222;
-  height: 100vh;
+header{
+  background:#172554;color:white;padding:16px 5%;
+  display:flex;justify-content:space-between;align-items:center;
 }
-
-.app {
-  max-width: 1200px;
-  height: 100vh;
-  margin: auto;
-  display: flex;
-  background: white;
-  overflow: hidden;
+header h2{margin:0}
+select,button,input{font:inherit}
+select{padding:9px;border-radius:8px;border:0}
+.container{max-width:1000px;margin:25px auto;padding:15px}
+.card{
+  background:white;padding:22px;border-radius:15px;
+  box-shadow:0 5px 20px #0001;margin-bottom:15px;
 }
-
-.sidebar {
-  width: 340px;
-  border-right: 1px solid #ddd;
-  display: flex;
-  flex-direction: column;
+input{
+  width:100%;padding:13px;margin:8px 0 14px;
+  border:1px solid #ccd3df;border-radius:8px;
 }
-
-.brand {
-  background: #075e54;
-  color: white;
-  padding: 22px;
+button{
+  padding:12px 18px;border:0;border-radius:8px;
+  background:#2563eb;color:white;cursor:pointer;
 }
-
-.brand h2 {
-  font-size: 27px;
+button:hover{background:#1d4ed8}
+.secondary{background:#475569}
+.hidden{display:none!important}
+#app{display:grid;grid-template-columns:300px 1fr;gap:15px}
+#chatList{max-height:450px;overflow:auto}
+.chatItem{
+  padding:13px;border-bottom:1px solid #eee;
+  cursor:pointer;overflow-wrap:anywhere;
 }
-
-.brand small {
-  opacity: .85;
+.chatItem:hover{background:#eff6ff}
+#messages{
+  height:380px;overflow:auto;padding:12px;
+  background:#f8fafc;border-radius:10px;
 }
-
-.top {
-  padding: 12px;
-  background: #f5f6f6;
+.msg{
+  background:#dbeafe;padding:10px 13px;
+  border-radius:12px;margin:8px 0;max-width:85%;
+  overflow-wrap:anywhere;
 }
-
-select {
-  padding: 11px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  width: 100%;
-  cursor: pointer;
-}
-
-.search {
-  width: 100%;
-  padding: 12px;
-  border: 0;
-  border-radius: 8px;
-  margin-top: 10px;
-  outline: none;
-}
-
-.section {
-  padding: 16px;
-  color: #078477;
-  font-weight: bold;
-}
-
-.contact {
-  padding: 17px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-
-.contact:hover {
-  background: #f5f6f6;
-}
-
-.avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: #d8eee9;
-  display: grid;
-  place-items: center;
-  font-weight: bold;
-  color: #075e54;
-  flex-shrink: 0;
-}
-
-.contact small {
-  color: #777;
-}
-
-.chat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.chat-header {
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid #eee;
-  background: #f5f6f6;
-}
-
-.chat-header h3 {
-  font-size: 17px;
-}
-
-.online {
-  font-size: 12px;
-  color: #078477;
-  margin-top: 4px;
-}
-
-.messages {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background: #efeae2;
-}
-
-.bubble {
-  width: fit-content;
-  max-width: 80%;
-  padding: 12px 15px;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 1px 2px #ccc;
-  overflow-wrap: anywhere;
-}
-
-.bubble.me {
-  margin-left: auto;
-  background: #d9fdd3;
-}
-
-.time {
-  display: block;
-  text-align: right;
-  font-size: 10px;
-  color: #777;
-  margin-top: 6px;
-}
-
-.welcome {
-  margin: auto;
-  text-align: center;
-  color: #666;
-  padding: 25px;
-  line-height: 1.8;
-}
-
-.composer {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  background: #f5f6f6;
-}
-
-.composer input {
-  flex: 1;
-  min-width: 0;
-  padding: 14px;
-  border: 0;
-  border-radius: 25px;
-  outline: none;
-}
-
-.send {
-  background: #075e54;
-  color: white;
-  border: 0;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  cursor: pointer;
-  font-size: 20px;
-}
-
-.send:hover {
-  background: #064d45;
-}
-
-@media(max-width:650px) {
-  .sidebar {
-    width: 110px;
-  }
-
-  .brand {
-    padding: 13px 5px;
-    text-align: center;
-  }
-
-  .brand h2 {
-    font-size: 16px;
-  }
-
-  .brand small {
-    font-size: 10px;
-  }
-
-  .top {
-    padding: 6px;
-  }
-
-  .top select {
-    font-size: 11px;
-    padding: 8px 2px;
-  }
-
-  .search {
-    font-size: 10px;
-    padding: 8px 4px;
-  }
-
-  .section {
-    font-size: 11px;
-    padding: 10px 3px;
-    text-align: center;
-  }
-
-  .contact {
-    padding: 12px 5px;
-    justify-content: center;
-  }
-
-  .contact .details {
-    display: none;
-  }
-
-  .chat-header {
-    padding: 12px 8px;
-  }
-
-  .chat-header h3 {
-    font-size: 14px;
-  }
-
-  .messages {
-    padding: 12px;
-  }
-
-  .composer {
-    padding: 8px;
-  }
-
-  .composer input {
-    padding: 12px;
-  }
+.mine{background:#dcfce7;margin-left:auto}
+.small{font-size:12px;color:#64748b}
+#status{margin:10px 0;color:#b91c1c}
+#chatHeader{overflow-wrap:anywhere}
+@media(max-width:700px){
+  #app{grid-template-columns:1fr}
+  #messages{height:350px}
 }
 </style>
 </head>
 
 <body>
+<header>
+  <h2>💬 DigiChat</h2>
+  <select id="language">
+    <option value="en">English</option>
+    <option value="mr">मराठी</option>
+    <option value="hi">हिन्दी</option>
+  </select>
+</header>
 
-<div class="app">
+<div class="container">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <section id="authBox" class="card">
+    <h2 id="authTitle">Welcome to DigiChat</h2>
+    <p id="authDescription">Create your account or login.</p>
 
-    <div class="brand">
-      <h2>💬 DigiChat</h2>
-      <small id="brandSub">By DigiTech</small>
+    <label id="emailLabel">Email</label>
+    <input id="email" type="email" placeholder="Enter your email">
+
+    <label id="passwordLabel">Password</label>
+    <input id="password" type="password" placeholder="Minimum 6 characters">
+
+    <button id="authButton">Login</button>
+    <button id="toggleAuth" class="secondary">Create account</button>
+    <p id="status"></p>
+  </section>
+
+  <section id="mainBox" class="hidden">
+    <div class="card">
+      <h3 id="accountTitle">Your Account</h3>
+      <p id="userEmail"></p>
+      <p class="small" id="uidText"></p>
+      <button id="copyUID" class="secondary">Copy My UID</button>
+      <button id="logout">Logout</button>
     </div>
 
-    <div class="top">
+    <div id="app">
+      <div class="card">
+        <h3 id="chatsTitle">My Chats</h3>
+        <label id="friendLabel">Friend's Firebase UID</label>
+        <input id="friendUID" placeholder="Paste your friend's UID">
+        <button id="createChat">Start Chat</button>
+        <p id="chatStatus" class="small"></p>
+        <hr>
+        <div id="chatList"></div>
+      </div>
 
-      <select id="language">
-        <option value="en">🇬🇧 English</option>
-        <option value="mr">🇮🇳 मराठी</option>
-        <option value="hi">🇮🇳 हिन्दी</option>
-      </select>
-
-      <input
-        class="search"
-        id="search"
-        placeholder="Search chats..."
-        oninput="searchChats()"
-      >
-
+      <div class="card">
+        <h3 id="chatHeader">Select a chat</h3>
+        <div id="messages"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input id="messageInput" placeholder="Type a message..." style="margin:0">
+          <button id="sendButton">Send</button>
+        </div>
+      </div>
     </div>
-
-    <div class="section" id="chatTitle">MY CHATS</div>
-
-    <div class="contact" onclick="openChat()">
-
-      <div class="avatar">F</div>
-
-      <div class="details">
-        <b class="friend-name">My Friend</b>
-        <br>
-        <small id="lastMessage">Start a conversation</small>
-      </div>
-
-    </div>
-
-  </aside>
-
-  <!-- CHAT AREA -->
-  <main class="chat">
-
-    <header class="chat-header">
-
-      <div class="avatar">F</div>
-
-      <div>
-        <h3 class="friend-name">My Friend</h3>
-        <div class="online" id="status">Demo chat</div>
-      </div>
-
-    </header>
-
-    <section class="messages" id="messages">
-
-      <div class="welcome" id="welcome">
-        <h2>Welcome to DigiChat 👋</h2>
-        <p>Your private messaging space.</p>
-        <p>Select your language and start chatting.</p>
-      </div>
-
-    </section>
-
-    <!-- MESSAGE INPUT -->
-    <form class="composer" id="chatForm">
-
-      <input
-        id="messageInput"
-        placeholder="Type a message..."
-        autocomplete="off"
-      >
-
-      <button class="send" type="submit">➤</button>
-
-    </form>
-
-  </main>
-
+  </section>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 
-// ALL LANGUAGE TRANSLATIONS
+import {
+  getAuth, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
-const translations = {
+import {
+  getFirestore, collection, addDoc, query, where,
+  onSnapshot, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-  en: {
-    chats: "MY CHATS",
-    search: "Search chats...",
-    start: "Start a conversation",
-    welcome: "Welcome to DigiChat 👋",
-    intro: "Your private messaging space.",
-    select: "Select your language and start chatting.",
-    input: "Type a message...",
-    status: "Demo chat",
-    friend: "My Friend",
-    brand: "By DigiTech"
-  },
-
-  mr: {
-    chats: "माझ्या गप्पा",
-    search: "गप्पा शोधा...",
-    start: "संवाद सुरू करा",
-    welcome: "DigiChat मध्ये तुमचे स्वागत आहे 👋",
-    intro: "तुमची खाजगी संदेश पाठवण्याची जागा.",
-    select: "तुमची भाषा निवडा आणि गप्पा सुरू करा.",
-    input: "संदेश लिहा...",
-    status: "डेमो चॅट",
-    friend: "माझा मित्र",
-    brand: "DigiTech कडून"
-  },
-
-  hi: {
-    chats: "मेरी चैट",
-    search: "चैट खोजें...",
-    start: "बातचीत शुरू करें",
-    welcome: "DigiChat में आपका स्वागत है 👋",
-    intro: "आपकी निजी मैसेजिंग जगह।",
-    select: "अपनी भाषा चुनें और चैट शुरू करें।",
-    input: "संदेश लिखें...",
-    status: "डेमो चैट",
-    friend: "मेरा दोस्त",
-    brand: "DigiTech की ओर से"
-  }
-
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD0OMTU2s1kRQ_ljFIJpk4JvZlYSUZA5jI",
+  authDomain: "digichat-e5c5a.firebaseapp.com",
+  projectId: "digichat-e5c5a",
+  storageBucket: "digichat-e5c5a.firebasestorage.app",
+  messagingSenderId: "291258843320",
+  appId: "1:291258843320:web:8f026f787ecdc0573d344d"
 };
 
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// LANGUAGE CHANGE FUNCTION
+let currentUser = null;
+let isSignup = false;
+let activeChat = null;
+let stopChats = null;
+let stopMessages = null;
+let language = localStorage.getItem("digichat-language") || "en";
 
-function changeLanguage() {
+const words = {
+ en:{
+  welcome:"Welcome to DigiChat",description:"Create your account or login.",
+  email:"Email",password:"Password",login:"Login",
+  signup:"Create account",account:"Your Account",copy:"Copy My UID",
+  logout:"Logout",chats:"My Chats",friend:"Friend's Firebase UID",
+  start:"Start Chat",select:"Select a chat",type:"Type a message...",
+  send:"Send",empty:"No chats yet.",created:"Chat created!",
+  invalid:"Enter a valid friend's UID.",self:"You cannot chat with yourself.",
+  sent:"Message sent.",failed:"Error: ",signupMode:"Create your account",
+  loginMode:"Already have an account? Login"
+ },
+ mr:{
+  welcome:"DigiChat madhye tumche swagat aahe",
+  description:"Nave account tayar kara kiwa Login kara.",
+  email:"Email",password:"Password",login:"Login",
+  signup:"Nave account tayar kara",account:"Tumche Account",
+  copy:"Maza UID Copy kara",logout:"Logout",chats:"Majhya Gappa",
+  friend:"Friend cha Firebase UID",start:"Chat suru kara",
+  select:"Chat nivda",type:"Message liha...",send:"Pathva",
+  empty:"Ajun chat nahi.",created:"Chat tayar zala!",
+  invalid:"Barobar Friend UID taka.",self:"Swatah sobat chat karta yenar nahi.",
+  sent:"Message pathavla.",failed:"Error: ",
+  signupMode:"Nave account tayar kara",
+  loginMode:"Account aahe? Login kara"
+ },
+ hi:{
+  welcome:"DigiChat mein aapka swagat hai",
+  description:"Account banaye ya Login karein.",
+  email:"Email",password:"Password",login:"Login",
+  signup:"Account banaye",account:"Aapka Account",
+  copy:"Mera UID Copy karein",logout:"Logout",chats:"Meri Chats",
+  friend:"Friend ka Firebase UID",start:"Chat shuru karein",
+  select:"Chat chunein",type:"Message likhein...",send:"Bhejein",
+  empty:"Abhi koi chat nahi.",created:"Chat ban gaya!",
+  invalid:"Sahi Friend UID dalein.",self:"Khud se chat nahi kar sakte.",
+  sent:"Message bhej diya.",failed:"Error: ",
+  signupMode:"Account banaye",
+  loginMode:"Account hai? Login karein"
+ }
+};
 
-  const lang = document.getElementById("language").value;
+function t(key){return words[language][key] || words.en[key]}
 
-  const t = translations[lang];
-
-  document.documentElement.lang = lang;
-
-  document.getElementById("chatTitle").textContent = t.chats;
-
-  document.getElementById("search").placeholder = t.search;
-
-  document.getElementById("lastMessage").textContent = t.start;
-
-  document.getElementById("status").textContent = t.status;
-
-  document.getElementById("messageInput").placeholder = t.input;
-
-  document.getElementById("brandSub").textContent = t.brand;
-
-  document.querySelectorAll(".friend-name").forEach(el => {
-    el.textContent = t.friend;
-  });
-
-  document.getElementById("welcome").innerHTML = `
-    <h2>${t.welcome}</h2>
-    <p>${t.intro}</p>
-    <p>${t.select}</p>
-  `;
-
-  localStorage.setItem("digichat-language", lang);
-
-  searchChats();
-
+function updateLanguage(){
+ document.documentElement.lang=language;
+ document.getElementById("authTitle").textContent=t("welcome");
+ document.getElementById("authDescription").textContent=t("description");
+ document.getElementById("emailLabel").textContent=t("email");
+ document.getElementById("passwordLabel").textContent=t("password");
+ document.getElementById("accountTitle").textContent=t("account");
+ document.getElementById("copyUID").textContent=t("copy");
+ document.getElementById("logout").textContent=t("logout");
+ document.getElementById("chatsTitle").textContent=t("chats");
+ document.getElementById("friendLabel").textContent=t("friend");
+ document.getElementById("createChat").textContent=t("start");
+ document.getElementById("sendButton").textContent=t("send");
+ document.getElementById("messageInput").placeholder=t("type");
+ document.getElementById("authButton").textContent=isSignup?t("signup"):t("login");
+ document.getElementById("toggleAuth").textContent=isSignup?t("loginMode"):t("signup");
+ if(!activeChat) document.getElementById("chatHeader").textContent=t("select");
 }
+document.getElementById("language").value=language;
+document.getElementById("language").addEventListener("change",e=>{
+ language=e.target.value;
+ localStorage.setItem("digichat-language",language);
+ updateLanguage();
+});
+updateLanguage();
 
+const statusBox=document.getElementById("status");
+const chatStatus=document.getElementById("chatStatus");
 
-// OPEN CHAT
+document.getElementById("toggleAuth").onclick=()=>{
+ isSignup=!isSignup;
+ statusBox.textContent="";
+ updateLanguage();
+};
 
-function openChat() {
+document.getElementById("authButton").onclick=async()=>{
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
 
-  document.getElementById("welcome").style.display = "none";
+ if(!email || !password){
+  statusBox.textContent="Enter email and password.";
+  return;
+ }
+ if(password.length<6){
+  statusBox.textContent="Password must have at least 6 characters.";
+  return;
+ }
 
-  document.getElementById("messageInput").focus();
+ try{
+  if(isSignup){
+   await createUserWithEmailAndPassword(auth,email,password);
+  }else{
+   await signInWithEmailAndPassword(auth,email,password);
+  }
+  statusBox.textContent="";
+ }catch(error){
+  statusBox.textContent=t("failed")+error.message;
+ }
+};
 
-}
+onAuthStateChanged(auth,user=>{
+ currentUser=user;
+ document.getElementById("authBox").classList.toggle("hidden",!!user);
+ document.getElementById("mainBox").classList.toggle("hidden",!user);
 
-
-// SEARCH CHAT
-
-function searchChats() {
-
-  const lang = document.getElementById("language").value;
-
-  const value = document.getElementById("search").value.toLowerCase();
-
-  const friend = translations[lang].friend.toLowerCase();
-
-  const contact = document.querySelector(".contact");
-
-  contact.style.display =
-    friend.includes(value) || "my friend".includes(value)
-      ? "flex"
-      : "none";
-
-}
-
-
-// SEND MESSAGE - DEMO ONLY
-
-document.getElementById("chatForm").addEventListener("submit", function(e) {
-
-  e.preventDefault();
-
-  const input = document.getElementById("messageInput");
-
-  const text = input.value.trim();
-
-  if (!text) return;
-
-  openChat();
-
-  const bubble = document.createElement("div");
-
-  bubble.className = "bubble me";
-
-  bubble.textContent = text;
-
-  const time = document.createElement("span");
-
-  time.className = "time";
-
-  time.textContent = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-
-  bubble.appendChild(time);
-
-  document.getElementById("messages").appendChild(bubble);
-
-  document.getElementById("messages").scrollTop =
-    document.getElementById("messages").scrollHeight;
-
-  document.getElementById("lastMessage").textContent = text;
-
-  input.value = "";
-
+ if(user){
+  document.getElementById("userEmail").textContent=user.email;
+  document.getElementById("uidText").textContent="UID: "+user.uid;
+  loadChats();
+ }else{
+  if(stopChats) stopChats();
+  if(stopMessages) stopMessages();
+  stopChats=null;stopMessages=null;
+  activeChat=null;
+  document.getElementById("chatList").replaceChildren();
+  document.getElementById("messages").replaceChildren();
+ }
 });
 
+document.getElementById("copyUID").onclick=async()=>{
+ if(!currentUser)return;
+ try{
+  await navigator.clipboard.writeText(currentUser.uid);
+  chatStatus.textContent="UID copied!";
+ }catch{
+  chatStatus.textContent="Copy failed. Select and copy the UID manually.";
+ }
+};
 
-// LOAD SAVED LANGUAGE
+document.getElementById("logout").onclick=()=>signOut(auth);
 
-const savedLanguage = localStorage.getItem("digichat-language");
+function loadChats(){
+ if(stopChats)stopChats();
 
-if (savedLanguage && translations[savedLanguage]) {
-  document.getElementById("language").value = savedLanguage;
+ const q=query(
+  collection(db,"chats"),
+  where("members","array-contains",currentUser.uid)
+ );
+
+ stopChats=onSnapshot(q,snapshot=>{
+  const list=document.getElementById("chatList");
+  list.replaceChildren();
+
+  if(snapshot.empty){
+   const p=document.createElement("p");
+   p.textContent=t("empty");
+   list.append(p);
+   return;
+  }
+
+  snapshot.forEach(chatDoc=>{
+   const data=chatDoc.data();
+   const other=data.members.find(id=>id!==currentUser.uid);
+   const item=document.createElement("div");
+   item.className="chatItem";
+   item.textContent="Friend UID: "+(other||"Unknown");
+   item.onclick=()=>openChat(chatDoc.id,other);
+   list.append(item);
+  });
+ },error=>{
+  chatStatus.textContent=t("failed")+error.message;
+ });
 }
 
-document.getElementById("language").addEventListener(
-  "change",
-  changeLanguage
-);
+document.getElementById("createChat").onclick=async()=>{
+ if(!currentUser)return;
+ const friendUID=document.getElementById("friendUID").value.trim();
 
-changeLanguage();
+ if(!friendUID || friendUID.length<10){
+  chatStatus.textContent=t("invalid");
+  return;
+ }
+ if(friendUID===currentUser.uid){
+  chatStatus.textContent=t("self");
+  return;
+ }
 
+ try{
+  const chatRef=await addDoc(collection(db,"chats"),{
+   members:[currentUser.uid,friendUID],
+   createdAt:serverTimestamp()
+  });
+  chatStatus.textContent=t("created");
+  document.getElementById("friendUID").value="";
+  openChat(chatRef.id,friendUID);
+ }catch(error){
+  chatStatus.textContent=t("failed")+error.message;
+ }
+};
+
+function openChat(chatId,friendUID){
+ activeChat=chatId;
+ if(stopMessages)stopMessages();
+
+ document.getElementById("chatHeader").textContent=
+  "Chat with: "+(friendUID||"Friend");
+
+ const messageArea=document.getElementById("messages");
+ messageArea.replaceChildren();
+
+ const q=query(
+  collection(db,"chats",chatId,"messages"),
+  orderBy("createdAt","asc")
+ );
+
+ stopMessages=onSnapshot(q,snapshot=>{
+  messageArea.replaceChildren();
+
+  snapshot.forEach(messageDoc=>{
+   const data=messageDoc.data();
+   const bubble=document.createElement("div");
+   bubble.className="msg"+
+    (data.senderId===currentUser.uid?" mine":"");
+
+   const content=document.createElement("div");
+   content.textContent=data.text || "";
+   bubble.append(content);
+
+   const label=document.createElement("div");
+   label.className="small";
+   label.textContent=data.senderId===currentUser.uid?"You":"Friend";
+   bubble.append(label);
+
+   messageArea.append(bubble);
+  });
+
+  messageArea.scrollTop=messageArea.scrollHeight;
+ },error=>{
+  chatStatus.textContent=t("failed")+error.message;
+ });
+}
+
+async function sendMessage(){
+ if(!currentUser || !activeChat)return;
+
+ const input=document.getElementById("messageInput");
+ const message=input.value.trim();
+ if(!message)return;
+
+ try{
+  await addDoc(
+   collection(db,"chats",activeChat,"messages"),
+   {
+    text:message,
+    senderId:currentUser.uid,
+    createdAt:serverTimestamp()
+   }
+  );
+  input.value="";
+ }catch(error){
+  chatStatus.textContent=t("failed")+error.message;
+ }
+}
+
+document.getElementById("sendButton").onclick=sendMessage;
+document.getElementById("messageInput").addEventListener("keydown",e=>{
+ if(e.key==="Enter")sendMessage();
+});
 </script>
-
 </body>
 </html>
